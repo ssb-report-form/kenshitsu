@@ -1,0 +1,1264 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>まいばすけっと 検質報告</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0c1929;--s1:#111f33;--s2:#172540;--s3:#1e2e4a;
+  --gold:#c8973a;--gold2:#e8b550;
+  --tx:#dde6f4;--tx2:#7a96b8;--tx3:#3d5470;
+  --red:#e05565;--rbg:rgba(224,85,101,.13);
+  --amb:#e8a030;--abg:rgba(232,160,48,.12);
+  --grn:#2ec98a;--gbg:rgba(46,201,138,.12);
+  --blu:#4b8eff;--bbg:rgba(75,142,255,.12);
+  --pur:#9b70ff;--pbg:rgba(155,112,255,.12);
+  --tel:#2ec4b6;
+  --bdr:rgba(255,255,255,.07);--bdr2:rgba(255,255,255,.12);
+  --r:10px;--r2:14px;
+  --nav-h:56px;
+}
+html,body{height:100%;overflow-x:hidden;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--tx);font-family:'Noto Sans JP',sans-serif;font-size:14px;line-height:1.5;padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom) + 8px)}
+body.no-nav{padding-bottom:0}
+
+/* ─── Top bar ─── */
+.top-bar{
+  position:sticky;top:0;z-index:30;
+  background:var(--s1);border-bottom:1px solid var(--bdr);
+  padding:12px 16px;display:flex;align-items:center;justify-content:space-between;
+}
+.top-logo{display:flex;align-items:center;gap:10px}
+.top-accent{width:3px;height:22px;background:linear-gradient(180deg,var(--gold),var(--gold2));border-radius:2px}
+.top-name{font-size:15px;font-weight:700;letter-spacing:.03em}
+.top-sub{font-size:9px;color:var(--tx3);font-family:'JetBrains Mono',monospace;margin-top:1px}
+.top-right{display:flex;align-items:center;gap:6px}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--grn);animation:pu 2s ease-in-out infinite}
+@keyframes pu{0%,100%{opacity:1}50%{opacity:.25}}
+.live-txt{font-size:9px;color:var(--tx3);font-family:'JetBrains Mono',monospace}
+.date-txt{font-size:10px;color:var(--tx2);font-family:'JetBrains Mono',monospace}
+
+/* ─── Step indicator ─── */
+.step-bar{
+  background:var(--s1);border-bottom:1px solid var(--bdr);
+  padding:10px 16px;display:flex;align-items:center;gap:6px;
+}
+.step-dot{
+  width:24px;height:24px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:10px;font-weight:700;font-family:'JetBrains Mono',monospace;
+  background:var(--s3);color:var(--tx3);border:1px solid var(--bdr);
+  transition:all .3s;flex-shrink:0;
+}
+.step-dot.done{background:var(--gbg);color:var(--grn);border-color:rgba(46,201,138,.3)}
+.step-dot.active{background:linear-gradient(135deg,var(--gold),var(--gold2));color:#0c1929;border-color:transparent;box-shadow:0 0 12px rgba(200,151,58,.3)}
+.step-line{flex:1;height:2px;background:var(--s3);border-radius:1px}
+.step-line.done{background:var(--grn)}
+.step-label{font-size:9px;color:var(--tx3);text-align:center;margin-top:4px}
+
+/* ─── Main ─── */
+.main{padding:14px 14px 8px}
+.panel{display:none;animation:fu .25s ease}
+.panel.on{display:block}
+@keyframes fu{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* ─── Section heading ─── */
+.sec-h{font-size:11px;font-weight:500;color:var(--tx3);text-transform:uppercase;letter-spacing:.08em;margin:16px 0 8px}
+.sec-h:first-child{margin-top:0}
+
+/* ─── Page title ─── */
+.pg-title{font-size:17px;font-weight:700;margin-bottom:2px}
+.pg-sub{font-size:11px;color:var(--tx2);margin-bottom:14px}
+
+/* ─── Card ─── */
+.card{background:var(--s1);border:1px solid var(--bdr);border-radius:var(--r2);padding:14px 15px;position:relative;overflow:hidden;margin-bottom:10px}
+.card::after{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.07),transparent)}
+
+/* ─── KPI grid ─── */
+.kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:10px}
+.kc{background:var(--s1);border:1px solid var(--bdr);border-radius:var(--r2);padding:13px;position:relative;overflow:hidden}
+.kc::after{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.07),transparent)}
+.kc-lbl{font-size:9px;font-weight:500;color:var(--tx2);text-transform:uppercase;letter-spacing:.07em;margin-bottom:7px;line-height:1.3}
+.kc-val{font-size:22px;font-weight:700;font-family:'JetBrains Mono',monospace;letter-spacing:-.02em;line-height:1}
+.kc-u{font-size:12px;font-weight:400;color:var(--tx2);margin-left:1px}
+
+/* ─── Tag ─── */
+.tag{display:inline-flex;align-items:center;font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;font-family:'JetBrains Mono',monospace;white-space:nowrap}
+.tr{background:var(--rbg);color:var(--red)}
+.tg{background:var(--gbg);color:var(--grn)}
+.ta{background:var(--abg);color:var(--amb)}
+.tb{background:var(--bbg);color:var(--blu)}
+
+/* ─── Form elements ─── */
+.form-group{margin-bottom:14px}
+.form-label{display:block;font-size:10px;font-weight:500;color:var(--tx2);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px}
+.form-input,.form-select{
+  width:100%;padding:11px 13px;
+  background:var(--s2);border:1px solid var(--bdr2);border-radius:var(--r);
+  color:var(--tx);font-size:14px;font-family:'Noto Sans JP',sans-serif;
+  outline:none;transition:border-color .2s;
+  -webkit-appearance:none;
+}
+.form-input:focus,.form-select:focus{border-color:var(--gold)}
+.form-input::placeholder{color:var(--tx3)}
+.form-select{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%237a96b8'%3E%3Cpath d='M2 4l4 4 4-4'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center}
+.form-select option{background:var(--s1);color:var(--tx)}
+.form-input[type="date"]{color-scheme:dark}
+
+/* ─── Buttons ─── */
+.btn{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  width:100%;padding:13px;border:none;border-radius:var(--r);
+  font-size:14px;font-weight:600;font-family:'Noto Sans JP',sans-serif;
+  cursor:pointer;transition:all .2s;
+}
+.btn-gold{background:linear-gradient(135deg,var(--gold),var(--gold2));color:#0c1929}
+.btn-gold:active{transform:scale(.98);opacity:.9}
+.btn-gold:disabled{opacity:.4;pointer-events:none}
+.btn-outline{background:transparent;border:1px solid var(--bdr2);color:var(--tx2)}
+.btn-outline:active{background:var(--s2)}
+.btn-green{background:var(--gbg);color:var(--grn);border:1px solid rgba(46,201,138,.3)}
+.btn-green:active{opacity:.8}
+.btn-red{background:var(--rbg);color:var(--red);border:1px solid rgba(224,85,101,.3)}
+.btn-row{display:flex;gap:8px;margin-top:12px}
+.btn-row .btn{flex:1}
+
+/* ─── Login center select ─── */
+.center-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px}
+.center-card{
+  background:var(--s1);border:2px solid var(--bdr);border-radius:var(--r2);
+  padding:18px 10px;text-align:center;cursor:pointer;transition:all .2s;
+}
+.center-card:active{transform:scale(.97)}
+.center-card.selected{border-color:var(--gold);background:rgba(200,151,58,.08)}
+.center-icon{font-size:28px;margin-bottom:6px}
+.center-name{font-size:13px;font-weight:600}
+.center-sub{font-size:9px;color:var(--tx3);margin-top:2px}
+
+/* ─── Password field ─── */
+.pw-field{position:relative}
+.pw-field .form-input{padding-right:44px;letter-spacing:3px}
+.pw-toggle{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--tx3);cursor:pointer;font-size:16px;padding:4px}
+.pw-attempts{font-size:10px;color:var(--tx3);margin-top:4px;text-align:right}
+
+/* ─── Item list ─── */
+.item-row{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 0;border-bottom:1px solid var(--bdr);
+}
+.item-row:last-child{border-bottom:none}
+.item-num{
+  width:26px;height:26px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:10px;font-weight:700;font-family:'JetBrains Mono',monospace;
+  background:var(--bbg);color:var(--blu);flex-shrink:0;
+}
+.item-body{flex:1;min-width:0}
+.item-name{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item-meta{font-size:10px;color:var(--tx3);margin-top:1px}
+.item-actions{display:flex;gap:6px;flex-shrink:0}
+.item-btn{
+  width:36px;height:36px;border-radius:8px;border:1px solid var(--bdr);
+  display:flex;align-items:center;justify-content:center;
+  background:var(--s2);color:var(--tx2);cursor:pointer;font-size:16px;
+  transition:all .15s;
+}
+.item-btn:active{background:var(--s3)}
+.item-btn.pass{background:var(--gbg);color:var(--grn);border-color:rgba(46,201,138,.3)}
+.item-btn.fail{background:var(--rbg);color:var(--red);border-color:rgba(224,85,101,.3)}
+
+/* ─── Inspection detail modal ─── */
+.modal-overlay{
+  position:fixed;top:0;left:0;right:0;bottom:0;z-index:50;
+  background:rgba(0,0,0,.6);backdrop-filter:blur(4px);
+  display:none;align-items:flex-end;justify-content:center;
+}
+.modal-overlay.on{display:flex}
+.modal-sheet{
+  width:100%;max-width:480px;max-height:85vh;overflow-y:auto;
+  background:var(--bg);border-radius:16px 16px 0 0;
+  padding:20px 16px calc(20px + env(safe-area-inset-bottom));
+  animation:slideUp .25s ease;
+}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.modal-handle{width:36px;height:4px;background:var(--tx3);border-radius:2px;margin:0 auto 16px}
+.modal-title{font-size:15px;font-weight:700;margin-bottom:4px}
+.modal-sub{font-size:11px;color:var(--tx2);margin-bottom:16px}
+
+/* ─── Result badges ─── */
+.result-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.result-opt{
+  padding:12px;border-radius:var(--r);border:2px solid var(--bdr);
+  text-align:center;cursor:pointer;transition:all .2s;
+}
+.result-opt:active{transform:scale(.97)}
+.result-opt.sel-pass{border-color:var(--grn);background:var(--gbg)}
+.result-opt.sel-fail{border-color:var(--red);background:var(--rbg)}
+.result-icon{font-size:24px;margin-bottom:4px}
+.result-text{font-size:12px;font-weight:600}
+
+/* ─── Photo area ─── */
+.photo-area{
+  display:flex;gap:8px;flex-wrap:wrap;
+}
+.photo-thumb{
+  width:60px;height:60px;border-radius:8px;
+  background:var(--s2);border:1px dashed var(--bdr2);
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;color:var(--tx3);cursor:pointer;overflow:hidden;
+}
+.photo-thumb img{width:100%;height:100%;object-fit:cover}
+
+/* ─── PDF preview ─── */
+.pdf-preview{
+  background:#fff;color:#333;border-radius:8px;
+  padding:16px;margin-bottom:12px;font-size:11px;
+}
+.pdf-header{text-align:center;padding:8px;border-bottom:2px solid #2ec98a;margin-bottom:10px}
+.pdf-header.has-defect{border-color:#e05565}
+.pdf-title{font-size:14px;font-weight:700;color:#333}
+.pdf-info{font-size:10px;color:#666;margin-top:4px}
+.pdf-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.pdf-item{border:1px solid #ddd;border-radius:6px;padding:8px;font-size:10px}
+.pdf-item-name{font-weight:700;margin-bottom:2px}
+.pdf-item-detail{color:#666}
+.pdf-result-ok{color:#2ec98a;font-weight:700}
+.pdf-result-ng{color:#e05565;font-weight:700}
+
+/* ─── Summary cards ─── */
+.summary-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--bdr)}
+.summary-row:last-child{border-bottom:none}
+.summary-label{font-size:12px;color:var(--tx2)}
+.summary-val{font-size:13px;font-weight:600;font-family:'JetBrains Mono',monospace}
+
+/* ─── Bottom nav ─── */
+.bot-nav{
+  position:fixed;bottom:0;left:0;right:0;z-index:30;
+  background:var(--s1);border-top:1px solid var(--bdr);
+  display:flex;padding-bottom:env(safe-area-inset-bottom);
+  height:calc(var(--nav-h) + env(safe-area-inset-bottom));
+}
+.bn{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:3px;padding:6px 2px;border:none;background:none;
+  color:var(--tx3);font-size:9px;font-family:'Noto Sans JP',sans-serif;
+  cursor:pointer;transition:all .15s;position:relative;
+}
+.bn.on{color:var(--gold2)}
+.bn.on::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:24px;height:2px;background:var(--gold);border-radius:0 0 3px 3px}
+.bn:disabled{opacity:.3;pointer-events:none}
+.bn-ic{width:20px;height:20px;margin-bottom:1px}
+.bn-badge{
+  position:absolute;top:5px;right:calc(50% - 18px);
+  min-width:16px;height:16px;background:var(--red);color:#fff;
+  font-size:9px;font-weight:700;font-family:'JetBrains Mono',monospace;
+  border-radius:8px;padding:0 4px;display:flex;align-items:center;justify-content:center;
+}
+
+/* ─── Loading spinner ─── */
+.spinner{display:inline-block;width:18px;height:18px;border:2px solid var(--tx3);border-top-color:var(--gold);border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-overlay{
+  position:fixed;top:0;left:0;right:0;bottom:0;z-index:100;
+  background:rgba(12,25,41,.85);backdrop-filter:blur(4px);
+  display:none;flex-direction:column;align-items:center;justify-content:center;gap:12px;
+}
+.loading-overlay.on{display:flex}
+.loading-text{font-size:12px;color:var(--tx2)}
+
+/* ─── Toast ─── */
+.toast{
+  position:fixed;top:80px;left:50%;transform:translateX(-50%) translateY(-20px);z-index:200;
+  background:var(--s1);border:1px solid var(--bdr2);border-radius:var(--r);
+  padding:10px 18px;font-size:12px;font-weight:500;
+  opacity:0;transition:all .3s;pointer-events:none;
+  box-shadow:0 8px 32px rgba(0,0,0,.4);
+}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.success{border-color:rgba(46,201,138,.4);color:var(--grn)}
+.toast.error{border-color:rgba(224,85,101,.4);color:var(--red)}
+
+/* ─── Defect note ─── */
+textarea.form-input{resize:vertical;min-height:80px}
+
+/* ─── Utilities ─── */
+.hidden{display:none!important}
+.text-center{text-align:center}
+.mt-8{margin-top:8px}
+.mt-12{margin-top:12px}
+.mb-6{margin-bottom:6px}
+</style>
+</head>
+<body class="no-nav">
+
+<!-- TOP BAR -->
+<div class="top-bar">
+  <div class="top-logo">
+    <div class="top-accent"></div>
+    <div>
+      <div class="top-name">まいばすけっと検質報告</div>
+      <div class="top-sub">QUALITY INSPECTION</div>
+    </div>
+  </div>
+  <div class="top-right">
+    <div class="live-dot" id="statusDot"></div>
+    <div class="live-txt" id="statusTxt">OFFLINE</div>
+    <div class="date-txt" id="dateTxt"></div>
+  </div>
+</div>
+
+<!-- STEP INDICATOR (hidden on login) -->
+<div class="step-bar hidden" id="stepBar">
+  <div class="step-dot" id="sd1">1</div>
+  <div class="step-line" id="sl1"></div>
+  <div class="step-dot" id="sd2">2</div>
+  <div class="step-line" id="sl2"></div>
+  <div class="step-dot" id="sd3">3</div>
+  <div class="step-line" id="sl3"></div>
+  <div class="step-dot" id="sd4">4</div>
+  <div class="step-line" id="sl4"></div>
+  <div class="step-dot" id="sd5">5</div>
+</div>
+
+<div class="main">
+
+<!-- ════════ STEP 0: LOGIN ════════ -->
+<div class="panel on" id="p-login">
+  <div class="pg-title">センターログイン</div>
+  <div class="pg-sub">検質報告を行うセンターを選択してください</div>
+
+  <div class="sec-h">拠点選択</div>
+  <div class="center-grid">
+    <div class="center-card" onclick="selectCenter('大田','maibasu1',this)">
+      <div class="center-icon">🏭</div>
+      <div class="center-name">大田</div>
+      <div class="center-sub">Ota Center</div>
+    </div>
+    <div class="center-card" onclick="selectCenter('市川','maibasu2',this)">
+      <div class="center-icon">🏭</div>
+      <div class="center-name">市川</div>
+      <div class="center-sub">Ichikawa Center</div>
+    </div>
+    <div class="center-card" onclick="selectCenter('浮島','maibasu3',this)">
+      <div class="center-icon">🏭</div>
+      <div class="center-name">浮島</div>
+      <div class="center-sub">Ukishima Center</div>
+    </div>
+  </div>
+
+  <div class="sec-h">パスワード</div>
+  <div class="card">
+    <div class="form-group" style="margin-bottom:8px">
+      <div class="pw-field">
+        <input type="password" class="form-input" id="pwInput" placeholder="パスワードを入力">
+        <button class="pw-toggle" onclick="togglePw()">👁</button>
+      </div>
+      <div class="pw-attempts" id="pwAttempts"></div>
+    </div>
+    <button class="btn btn-gold" id="loginBtn" onclick="doLogin()" disabled>ログイン</button>
+  </div>
+
+  <div class="card" style="border-color:rgba(232,160,48,.2)">
+    <div style="font-size:11px;color:var(--amb);font-weight:500;margin-bottom:4px">ご注意</div>
+    <div style="font-size:11px;color:var(--tx2)">パスワードを3回間違えるとロックされます。管理者にお問い合わせください。</div>
+  </div>
+</div>
+
+<!-- ════════ STEP 1: BASIC INFO ════════ -->
+<div class="panel" id="p-info">
+  <div class="pg-title">基本情報</div>
+  <div class="pg-sub" id="centerLabel"></div>
+
+  <div class="card">
+    <div class="form-group">
+      <label class="form-label">検査日</label>
+      <input type="date" class="form-input" id="inspDate">
+    </div>
+    <div class="form-group" style="margin-bottom:0">
+      <label class="form-label">担当者 <span style="color:var(--red);font-size:8px">必須</span></label>
+      <select class="form-select" id="staffSelect" required>
+        <option value="">担当者を選択...</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="kpi-grid" style="margin-top:10px">
+    <div class="kc">
+      <div class="kc-lbl">選択センター</div>
+      <div class="kc-val" style="font-size:18px" id="kpiCenter">--</div>
+    </div>
+    <div class="kc">
+      <div class="kc-lbl">原価売価指示書</div>
+      <div class="kc-val" style="font-size:14px;color:var(--tx2)" id="kpiFile">未取込</div>
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-outline" onclick="goStep(0)">← 戻る</button>
+    <button class="btn btn-gold" onclick="goStepInfo()">次へ →</button>
+  </div>
+</div>
+
+<!-- ════════ STEP 2: IMPORT ════════ -->
+<div class="panel" id="p-import">
+  <div class="pg-title">原価売価指示書 取込</div>
+  <div class="pg-sub">Driveから最新の原価売価指示書を取り込みます</div>
+
+  <!-- 対象期間外の警告バナー -->
+  <div class="card hidden" id="cacheWarning" style="border-color:rgba(224,85,101,.3);margin-bottom:10px">
+    <div style="font-size:11px;font-weight:600;color:var(--red);margin-bottom:4px">対象期間外のマスタです</div>
+    <div style="font-size:11px;color:var(--tx2)" id="cacheWarningMsg">店着日がマスタの対象期間に含まれていません。再取込してください。</div>
+  </div>
+
+  <!-- キャッシュ済み表示 -->
+  <div class="card hidden" id="cacheInfo" style="border-color:rgba(46,201,138,.3)">
+    <div style="font-size:11px;font-weight:500;color:var(--grn);margin-bottom:8px">取込済みマスタ（キャッシュ）</div>
+    <div class="summary-row">
+      <div class="summary-label">ファイル名</div>
+      <div class="summary-val" id="cacheFileName" style="font-size:10px">--</div>
+    </div>
+    <div class="summary-row">
+      <div class="summary-label">対象期間</div>
+      <div class="summary-val" id="cacheDateRange" style="font-size:10px">--</div>
+    </div>
+    <div class="summary-row">
+      <div class="summary-label">店着日</div>
+      <div class="summary-val" id="cacheDelivery" style="font-size:10px">--</div>
+    </div>
+    <div class="summary-row">
+      <div class="summary-label">品目数</div>
+      <div class="summary-val" id="cacheCount" style="font-size:10px">--</div>
+    </div>
+    <div class="summary-row">
+      <div class="summary-label">キャッシュ日時</div>
+      <div class="summary-val" id="cacheDatetime" style="font-size:10px">--</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div style="font-size:11px;font-weight:500;color:var(--tx2);margin-bottom:10px">IMPORT SOURCE</div>
+    <div class="summary-row">
+      <div class="summary-label">取込元</div>
+      <div class="summary-val" style="font-size:10px;color:var(--blu)">原価売価指示書</div>
+    </div>
+    <div class="summary-row">
+      <div class="summary-label">対象ファイル</div>
+      <div class="summary-val" id="importFileName" style="font-size:10px">自動検出（最新）</div>
+    </div>
+    <div class="summary-row">
+      <div class="summary-label">ステータス</div>
+      <div class="summary-val" id="importStatus"><span class="tag ta">待機中</span></div>
+    </div>
+  </div>
+
+  <div class="card" id="fileSelectCard" style="margin-bottom:10px">
+    <div class="form-group" style="margin-bottom:0">
+      <label class="form-label">取込ファイル選択</label>
+      <select class="form-select" id="fileSelect">
+        <option value="">最新の原価売価指示書（自動）</option>
+      </select>
+    </div>
+  </div>
+
+  <button class="btn btn-gold" id="importBtn" onclick="doImport()">
+    📥 原価売価指示書を取込
+  </button>
+
+  <div class="card mt-12 hidden" id="importResult">
+    <div style="font-size:11px;font-weight:500;color:var(--grn);margin-bottom:8px">取込完了</div>
+    <div class="kpi-grid" style="margin-bottom:0">
+      <div class="kc">
+        <div class="kc-lbl">取込品目数</div>
+        <div class="kc-val" id="importCount">0<span class="kc-u">件</span></div>
+      </div>
+      <div class="kc">
+        <div class="kc-lbl">仕入先数</div>
+        <div class="kc-val" id="importSupplier">0<span class="kc-u">社</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="btn-row mt-12">
+    <button class="btn btn-outline" onclick="goStep(1)">← 戻る</button>
+    <button class="btn btn-gold" id="toInspBtn" onclick="goStep(3)" disabled>検査入力へ →</button>
+  </div>
+</div>
+
+<!-- ════════ STEP 3: INSPECTION ════════ -->
+<div class="panel" id="p-inspect">
+  <div class="pg-title">検質入力</div>
+  <div class="pg-sub" id="inspSub"></div>
+
+  <div class="kpi-grid" style="margin-bottom:12px">
+    <div class="kc">
+      <div class="kc-lbl">合格</div>
+      <div class="kc-val" style="color:var(--grn)" id="passCount">0<span class="kc-u">件</span></div>
+    </div>
+    <div class="kc">
+      <div class="kc-lbl">不良</div>
+      <div class="kc-val" style="color:var(--red)" id="failCount">0<span class="kc-u">件</span></div>
+    </div>
+  </div>
+
+  <div class="sec-h">品目一覧（タップして検査）</div>
+  <div class="card" id="itemList">
+    <!-- dynamically populated -->
+  </div>
+
+  <div class="btn-row mt-12">
+    <button class="btn btn-outline" onclick="goStep(2)">← 戻る</button>
+    <button class="btn btn-gold" onclick="goStep(4)">確認へ →</button>
+  </div>
+</div>
+
+<!-- ════════ STEP 4: CONFIRM / PDF ════════ -->
+<div class="panel" id="p-confirm">
+  <div class="pg-title">確認・PDF保存</div>
+  <div class="pg-sub">内容を確認してPDFをDriveに保存します</div>
+
+  <div class="sec-h">検査サマリー</div>
+  <div class="card">
+    <div class="summary-row"><div class="summary-label">センター</div><div class="summary-val" id="cfCenter">--</div></div>
+    <div class="summary-row"><div class="summary-label">検査日</div><div class="summary-val" id="cfDate">--</div></div>
+    <div class="summary-row"><div class="summary-label">担当者</div><div class="summary-val" id="cfStaff">--</div></div>
+    <div class="summary-row"><div class="summary-label">総品目数</div><div class="summary-val" id="cfTotal">--</div></div>
+    <div class="summary-row">
+      <div class="summary-label">結果</div>
+      <div id="cfResult">--</div>
+    </div>
+  </div>
+
+  <div class="sec-h">不良品一覧</div>
+  <div class="card" id="defectList">
+    <div style="font-size:12px;color:var(--tx3);text-align:center;padding:10px">不良品はありません</div>
+  </div>
+
+  <div class="sec-h">PDF プレビュー</div>
+  <div id="pdfPreview" class="card" style="padding:0;overflow:hidden">
+    <!-- generated at runtime -->
+  </div>
+
+  <div class="btn-row mt-12">
+    <button class="btn btn-outline" onclick="goStep(3)">← 修正する</button>
+    <button class="btn btn-gold" onclick="savePdf()">📄 PDF保存・提出</button>
+  </div>
+</div>
+
+</div><!-- /main -->
+
+<!-- BOTTOM NAV -->
+<nav class="bot-nav hidden" id="botNav">
+  <button class="bn" id="nav1" onclick="goStep(1)" disabled>
+    <svg class="bn-ic" viewBox="0 0 24 24" fill="none"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><rect x="9" y="3" width="6" height="4" rx="1" stroke="currentColor" stroke-width="2"/></svg>
+    基本情報
+  </button>
+  <button class="bn" id="nav2" onclick="goStep(2)" disabled>
+    <svg class="bn-ic" viewBox="0 0 24 24" fill="none"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 17v2a2 2 0 002 2h10a2 2 0 002-2v-2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    取込
+  </button>
+  <button class="bn" id="nav3" onclick="goStep(3)" disabled>
+    <svg class="bn-ic" viewBox="0 0 24 24" fill="none"><path d="M9 11l3 3 8-8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/></svg>
+    検査
+  </button>
+  <button class="bn" id="nav4" onclick="goStep(4)" disabled>
+    <svg class="bn-ic" viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    PDF
+  </button>
+</nav>
+
+<!-- INSPECTION MODAL -->
+<div class="modal-overlay" id="inspModal" onclick="if(event.target===this)closeModal()">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="modalTitle">品目名</div>
+    <div class="modal-sub" id="modalSub">産地 / 規格 / 仕入先</div>
+
+    <div class="sec-h">検査結果</div>
+    <div class="result-grid">
+      <div class="result-opt" id="optPass" onclick="setResult('pass')">
+        <div class="result-icon">✅</div>
+        <div class="result-text" style="color:var(--grn)">合格</div>
+      </div>
+      <div class="result-opt" id="optFail" onclick="setResult('fail')">
+        <div class="result-icon">❌</div>
+        <div class="result-text" style="color:var(--red)">不良</div>
+      </div>
+    </div>
+
+    <div id="defectFields" class="hidden">
+      <div class="sec-h">不良内容</div>
+      <div class="card" style="margin-bottom:8px">
+        <div class="form-group" style="margin-bottom:8px">
+          <label class="form-label">不良種別</label>
+          <select class="form-select" id="defectType">
+            <option value="">選択...</option>
+            <option>傷み</option>
+            <option>変色</option>
+            <option>サイズ不良</option>
+            <option>異物混入</option>
+            <option>温度逸脱</option>
+            <option>包装破損</option>
+            <option>その他</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">詳細コメント</label>
+          <textarea class="form-input" id="defectNote" placeholder="不良の詳細を入力..."></textarea>
+        </div>
+      </div>
+
+      <div class="sec-h">写真（任意）</div>
+      <div class="photo-area">
+        <label class="photo-thumb" id="photoAdd">
+          ＋
+          <input type="file" accept="image/*" capture="environment" style="display:none" onchange="addPhoto(event)">
+        </label>
+      </div>
+    </div>
+
+    <div class="btn-row" style="margin-top:16px">
+      <button class="btn btn-outline" onclick="closeModal()">キャンセル</button>
+      <button class="btn btn-gold" id="modalSave" onclick="saveInspection()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- LOADING -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner" style="width:36px;height:36px;border-width:3px"></div>
+  <div class="loading-text" id="loadingText">処理中...</div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- GAS連携コード（外部JSファイル） -->
+<script src="kenshitsu_connector.js"></script>
+
+<script>
+// ══════════════════════════════════════
+// State
+// ══════════════════════════════════════
+let state = {
+  center: '',
+  password: '',
+  attempts: 0,
+  maxAttempts: 3,
+  locked: false,
+  staff: [],
+  items: [],        // [{name, origin, spec, supplier, result, defectType, defectNote, photos}]
+  currentItem: -1,
+  step: 0
+};
+
+// ══════════════════════════════════════
+// Init
+// ══════════════════════════════════════
+(function init() {
+  const now = new Date();
+  document.getElementById('dateTxt').textContent =
+    now.getFullYear() + '.' + String(now.getMonth()+1).padStart(2,'0') + '.' + String(now.getDate()).padStart(2,'0');
+  document.getElementById('inspDate').valueAsDate = now;
+
+  // GAS接続テスト（connector未読込時はスキップ）
+  if (typeof gasPing === 'function') {
+    gasPing();
+  } else {
+    console.warn('kenshitsu_connector.js not loaded — running in standalone mode');
+    document.getElementById('statusDot').style.background = 'var(--amb)';
+    document.getElementById('statusTxt').textContent = 'DEMO';
+  }
+})();
+
+// ══════════════════════════════════════
+// Navigation
+// ══════════════════════════════════════
+function goStep(n) {
+  state.step = n;
+  const panels = ['p-login','p-info','p-import','p-inspect','p-confirm'];
+  panels.forEach(id => document.getElementById(id).classList.remove('on'));
+  document.getElementById(panels[n]).classList.add('on');
+
+  const stepBar = document.getElementById('stepBar');
+  const botNav = document.getElementById('botNav');
+
+  if (n === 0) {
+    stepBar.classList.add('hidden');
+    botNav.classList.add('hidden');
+    document.body.classList.add('no-nav');
+  } else {
+    stepBar.classList.remove('hidden');
+    botNav.classList.remove('hidden');
+    document.body.classList.remove('no-nav');
+    updateStepBar(n);
+    updateNav(n);
+  }
+
+  if (n === 2) { loadFileList(); checkMasterCache(); }
+  if (n === 3) renderItems();
+  if (n === 4) buildConfirm();
+
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function updateStepBar(n) {
+  for (let i = 1; i <= 5; i++) {
+    const dot = document.getElementById('sd'+i);
+    dot.className = 'step-dot';
+    if (i < n) dot.classList.add('done');
+    else if (i === n) dot.classList.add('active');
+  }
+  for (let i = 1; i <= 4; i++) {
+    const line = document.getElementById('sl'+i);
+    line.className = 'step-line';
+    if (i < n) line.classList.add('done');
+  }
+}
+
+function updateNav(n) {
+  for (let i = 1; i <= 4; i++) {
+    const btn = document.getElementById('nav'+i);
+    btn.classList.remove('on');
+    btn.disabled = (i > n);
+    if (i === n) btn.classList.add('on');
+  }
+}
+
+// ══════════════════════════════════════
+// Login（GAS連携）
+// ══════════════════════════════════════
+function selectCenter(name, pw, el) {
+  document.querySelectorAll('.center-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  state.center = name;
+  state.password = pw;
+  document.getElementById('loginBtn').disabled = false;
+}
+
+function togglePw() {
+  const inp = document.getElementById('pwInput');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+
+async function doLogin() {
+  if (state.locked) return toast('ロックされています','error');
+  const pw = document.getElementById('pwInput').value;
+
+  // GAS認証（connector経由 / フォールバック）
+  const passwords = { '大田':'maibasu1', '市川':'maibasu2', '浮島':'maibasu3' };
+  const result = (typeof gasAuth === 'function')
+    ? await gasAuth(state.center, pw)
+    : (pw === passwords[state.center] ? {ok:true,message:state.center+'センターにログインしました'} : {ok:false,message:'パスワードが違います'});
+
+  if (result.ok) {
+    toast(result.message || state.center + 'センターにログインしました','success');
+    document.getElementById('centerLabel').textContent = state.center + 'センター — 基本情報を入力してください';
+    document.getElementById('kpiCenter').textContent = state.center;
+    loadStaff();
+    goStep(1);
+  } else {
+    state.attempts++;
+    const remain = state.maxAttempts - state.attempts;
+    document.getElementById('pwAttempts').textContent = '残り' + remain + '回';
+    document.getElementById('pwAttempts').style.color = remain <= 1 ? 'var(--red)' : 'var(--tx3)';
+    if (remain <= 0) {
+      state.locked = true;
+      document.getElementById('loginBtn').disabled = true;
+      document.getElementById('pwInput').disabled = true;
+      toast('アカウントがロックされました','error');
+    } else {
+      toast(result.message || 'パスワードが違います','error');
+    }
+  }
+}
+
+// ══════════════════════════════════════
+// Staff loading（GAS連携）
+// ══════════════════════════════════════
+async function loadStaff() {
+  let staffList = [];
+
+  // 1) connector経由（GAS → Sheets API → デモの順でフォールバック）
+  if (typeof gasGetStaff === 'function') {
+    staffList = await gasGetStaff(state.center);
+  } else {
+    // connector未読込時: Google Visualization APIで直接読み取り
+    try {
+      staffList = await fetchStaffDirect(state.center);
+    } catch(e) {
+      console.warn('Direct sheet read failed:', e);
+    }
+    if (!staffList.length) {
+      staffList = ['田中太郎','佐藤花子','鈴木一郎','高橋美咲'];
+    }
+  }
+  const sel = document.getElementById('staffSelect');
+  sel.innerHTML = '<option value="">担当者を選択...</option>';
+  staffList.forEach(name => {
+    sel.innerHTML += '<option value="'+name+'">'+name+'</option>';
+  });
+}
+
+// ══════════════════════════════════════
+// ファイル一覧読み込み（ドロップダウン）
+// ══════════════════════════════════════
+async function loadFileList() {
+  var sel = document.getElementById('fileSelect');
+  sel.innerHTML = '<option value="">最新の原価売価指示書（自動）</option>';
+  if (typeof gasListFiles !== 'function') return;
+  try {
+    var files = await gasListFiles(state.center);
+    files.forEach(function(f) {
+      sel.innerHTML += '<option value="'+f.id+'">'+f.name+'</option>';
+    });
+  } catch(e) {
+    console.warn('loadFileList failed:', e);
+  }
+}
+
+// ══════════════════════════════════════
+// キャッシュチェック（ステップ2表示時）
+// ══════════════════════════════════════
+function checkMasterCache() {
+  var cache = null;
+  if (typeof loadMasterCache === 'function') {
+    cache = loadMasterCache(state.center);
+  } else {
+    try {
+      var raw = localStorage.getItem('kenshitsu_master_' + state.center);
+      if (raw) cache = JSON.parse(raw);
+    } catch(e) {}
+  }
+
+  var inspDate = document.getElementById('inspDate').value;
+  var delivery = calcDeliveryDate(inspDate);
+
+  // UI要素
+  var warningEl = document.getElementById('cacheWarning');
+  var infoEl = document.getElementById('cacheInfo');
+  warningEl.classList.add('hidden');
+  infoEl.classList.add('hidden');
+
+  if (cache && cache.items && cache.items.length > 0) {
+    // キャッシュあり → 表示
+    infoEl.classList.remove('hidden');
+    document.getElementById('cacheFileName').textContent = cache.fileName || '--';
+    document.getElementById('cacheCount').textContent = cache.items.length + '件';
+    document.getElementById('cacheDelivery').textContent = delivery;
+    document.getElementById('cacheDatetime').textContent = cache.cachedAt
+      ? new Date(cache.cachedAt).toLocaleString('ja-JP') : '--';
+
+    var dr = cache.dateRange;
+    if (dr && dr.from && dr.to) {
+      document.getElementById('cacheDateRange').textContent = dr.from + ' 〜 ' + dr.to;
+
+      // 店着日が対象期間内か
+      var valid = delivery >= dr.from && delivery <= dr.to;
+      if (!valid) {
+        warningEl.classList.remove('hidden');
+        document.getElementById('cacheWarningMsg').textContent =
+          '店着日（' + delivery + '）がマスタの対象期間（' + dr.from + '〜' + dr.to + '）外です。再取込してください。';
+      } else {
+        // 有効なキャッシュ → そのままitemsにセット
+        applyImportData(cache);
+      }
+    } else {
+      document.getElementById('cacheDateRange').textContent = '期間情報なし';
+    }
+  }
+}
+
+function calcDeliveryDate(inspDateStr) {
+  if (typeof getDeliveryDate === 'function') return getDeliveryDate(inspDateStr);
+  var d = new Date(inspDateStr);
+  d.setDate(d.getDate() + 1);
+  return d.toISOString().split('T')[0];
+}
+
+// ══════════════════════════════════════
+// Import（GAS連携 + キャッシュ保存）
+// ══════════════════════════════════════
+async function doImport() {
+  showLoading('原価売価指示書を取込中...');
+  document.getElementById('importStatus').innerHTML = '<span class="tag tb">取込中...</span>';
+
+  // GAS経由で原価売価指示書を取込（ドロップダウンで選択されたファイル）
+  var selectedFileId = document.getElementById('fileSelect').value || '';
+  let result;
+  if (typeof gasImportExcel === 'function') {
+    result = await gasImportExcel(state.center, selectedFileId);
+  } else {
+    await sleep(800);
+    // デモデータ（水曜始まりの今週期間）
+    var now = new Date();
+    var dow = now.getDay();
+    var diffW = (dow >= 3) ? (dow - 3) : (dow + 4);
+    var wed = new Date(now); wed.setDate(now.getDate() - diffW);
+    var tue = new Date(wed); tue.setDate(wed.getDate() + 6);
+    result = {
+      items: [
+        {name:'キャベツ',origin:'群馬',spec:'L',supplier:'丸果'},
+        {name:'トマト',origin:'熊本',spec:'2L/24玉',supplier:'大果'},
+        {name:'レタス',origin:'長野',spec:'L',supplier:'丸果'},
+        {name:'きゅうり',origin:'埼玉',spec:'M/50本',supplier:'大果'},
+        {name:'にんじん',origin:'北海道',spec:'L/10kg',supplier:'ベジテック'},
+        {name:'ブロッコリー',origin:'愛知',spec:'L',supplier:'丸果'},
+        {name:'ほうれん草',origin:'群馬',spec:'200g束',supplier:'大果'},
+        {name:'バナナ',origin:'フィリピン',spec:'13kg/箱',supplier:'ドール'},
+        {name:'りんご',origin:'青森',spec:'28玉',supplier:'丸果'},
+        {name:'みかん',origin:'和歌山',spec:'S/10kg',supplier:'ベジテック'},
+        {name:'じゃがいも',origin:'北海道',spec:'L/10kg',supplier:'大果'},
+        {name:'たまねぎ',origin:'北海道',spec:'L/20kg',supplier:'ベジテック'},
+      ],
+      fileName: '【'+state.center+'】原価売価指示書（デモ）.xlsx',
+      dateRange: { from: wed.toISOString().split('T')[0], to: tue.toISOString().split('T')[0] },
+    };
+    // フォールバック時もキャッシュ保存
+    try {
+      var cacheData = { ...result, cachedAt: new Date().toISOString() };
+      localStorage.setItem('kenshitsu_master_' + state.center, JSON.stringify(cacheData));
+    } catch(e) {}
+  }
+
+  applyImportData(result);
+  hideLoading();
+  toast(state.items.length + '件のデータを取り込みました','success');
+
+  // キャッシュ情報を更新表示
+  checkMasterCache();
+}
+
+// 取込データをUIに適用
+function applyImportData(result) {
+  state.items = (result.items || []).map(function(it, i) {
+    return { name:it.name, origin:it.origin, spec:it.spec, supplier:it.supplier,
+             result:'', defectType:'', defectNote:'', photos:[], idx:i };
+  });
+
+  var suppliers = [];
+  state.items.forEach(function(it) {
+    if (suppliers.indexOf(it.supplier) < 0) suppliers.push(it.supplier);
+  });
+
+  document.getElementById('importCount').innerHTML = state.items.length + '<span class="kc-u">件</span>';
+  document.getElementById('importSupplier').innerHTML = suppliers.length + '<span class="kc-u">社</span>';
+  document.getElementById('importStatus').innerHTML = '<span class="tag tg">完了</span>';
+  document.getElementById('importFileName').textContent = result.fileName || '原価売価指示書';
+  document.getElementById('importResult').classList.remove('hidden');
+  document.getElementById('toInspBtn').disabled = false;
+  document.getElementById('kpiFile').textContent = '取込済';
+  document.getElementById('kpiFile').style.color = 'var(--grn)';
+}
+
+// ══════════════════════════════════════
+// Inspection
+// ══════════════════════════════════════
+function renderItems() {
+  const el = document.getElementById('itemList');
+  if (!state.items.length) {
+    el.innerHTML = '<div style="text-align:center;color:var(--tx3);padding:20px">データがありません</div>';
+    return;
+  }
+  el.innerHTML = state.items.map((it, i) => {
+    let badge = '';
+    if (it.result === 'pass') badge = '<div class="item-btn pass">✓</div>';
+    else if (it.result === 'fail') badge = '<div class="item-btn fail">✗</div>';
+    else badge = '<div class="item-btn">−</div>';
+    return `
+      <div class="item-row" onclick="openInspection(${i})">
+        <div class="item-num">${i+1}</div>
+        <div class="item-body">
+          <div class="item-name">${it.name}</div>
+          <div class="item-meta">${it.origin} / ${it.spec} / ${it.supplier}</div>
+        </div>
+        ${badge}
+      </div>`;
+  }).join('');
+
+  const pass = state.items.filter(i=>i.result==='pass').length;
+  const fail = state.items.filter(i=>i.result==='fail').length;
+  document.getElementById('passCount').innerHTML = pass + '<span class="kc-u">件</span>';
+  document.getElementById('failCount').innerHTML = fail + '<span class="kc-u">件</span>';
+  document.getElementById('inspSub').textContent =
+    state.center + 'センター — ' + state.items.length + '品目中 ' + (pass+fail) + '件検査済';
+}
+
+function openInspection(idx) {
+  state.currentItem = idx;
+  const it = state.items[idx];
+  document.getElementById('modalTitle').textContent = (idx+1) + '. ' + it.name;
+  document.getElementById('modalSub').textContent = it.origin + ' / ' + it.spec + ' / ' + it.supplier;
+
+  document.getElementById('optPass').className = 'result-opt';
+  document.getElementById('optFail').className = 'result-opt';
+  document.getElementById('defectFields').classList.add('hidden');
+  document.getElementById('defectType').value = it.defectType || '';
+  document.getElementById('defectNote').value = it.defectNote || '';
+
+  if (it.result === 'pass') document.getElementById('optPass').classList.add('sel-pass');
+  if (it.result === 'fail') {
+    document.getElementById('optFail').classList.add('sel-fail');
+    document.getElementById('defectFields').classList.remove('hidden');
+  }
+
+  document.getElementById('inspModal').classList.add('on');
+}
+
+function setResult(r) {
+  document.getElementById('optPass').className = 'result-opt';
+  document.getElementById('optFail').className = 'result-opt';
+  if (r === 'pass') {
+    document.getElementById('optPass').classList.add('sel-pass');
+    document.getElementById('defectFields').classList.add('hidden');
+  } else {
+    document.getElementById('optFail').classList.add('sel-fail');
+    document.getElementById('defectFields').classList.remove('hidden');
+  }
+  state.items[state.currentItem].result = r;
+}
+
+function saveInspection() {
+  const it = state.items[state.currentItem];
+  if (!it.result) { toast('検査結果を選択してください','error'); return; }
+  if (it.result === 'fail') {
+    it.defectType = document.getElementById('defectType').value;
+    it.defectNote = document.getElementById('defectNote').value;
+  }
+  closeModal();
+  renderItems();
+  toast((state.currentItem+1) + '. ' + it.name + ' を保存しました','success');
+}
+
+function closeModal() {
+  document.getElementById('inspModal').classList.remove('on');
+}
+
+function addPhoto(ev) {
+  const file = ev.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    state.items[state.currentItem].photos.push(e.target.result);
+    const area = document.querySelector('.photo-area');
+    const thumb = document.createElement('div');
+    thumb.className = 'photo-thumb';
+    thumb.innerHTML = '<img src="'+e.target.result+'">';
+    area.insertBefore(thumb, document.getElementById('photoAdd'));
+  };
+  reader.readAsDataURL(file);
+  ev.target.value = '';
+}
+
+// ══════════════════════════════════════
+// Confirm / PDF（GAS連携）
+// ══════════════════════════════════════
+function buildConfirm() {
+  const pass = state.items.filter(i=>i.result==='pass').length;
+  const fail = state.items.filter(i=>i.result==='fail').length;
+  const total = state.items.length;
+
+  document.getElementById('cfCenter').textContent = state.center;
+  document.getElementById('cfDate').textContent = document.getElementById('inspDate').value;
+  document.getElementById('cfStaff').textContent = document.getElementById('staffSelect').value || '未選択';
+  document.getElementById('cfTotal').textContent = total + '件';
+
+  const resultEl = document.getElementById('cfResult');
+  if (fail > 0) {
+    resultEl.innerHTML = '<span class="tag tg">合格 '+pass+'</span> <span class="tag tr">不良 '+fail+'</span>';
+  } else {
+    resultEl.innerHTML = '<span class="tag tg">全品合格 '+pass+'件</span>';
+  }
+
+  // Defect list
+  const defects = state.items.filter(i=>i.result==='fail');
+  const dl = document.getElementById('defectList');
+  if (defects.length) {
+    dl.innerHTML = defects.map(d => `
+      <div class="item-row">
+        <div class="item-num" style="background:var(--rbg);color:var(--red)">${d.idx+1}</div>
+        <div class="item-body">
+          <div class="item-name" style="color:var(--red)">${d.name}</div>
+          <div class="item-meta">${d.defectType || '種別未選択'} — ${d.defectNote || 'コメントなし'}</div>
+        </div>
+      </div>`).join('');
+  } else {
+    dl.innerHTML = '<div style="font-size:12px;color:var(--grn);text-align:center;padding:10px">✓ 不良品はありません</div>';
+  }
+
+  buildPdfPreview(pass, fail, defects);
+}
+
+function buildPdfPreview(pass, fail, defects) {
+  const date = document.getElementById('inspDate').value;
+  const staff = document.getElementById('staffSelect').value || '--';
+  const hasDefect = defects.length > 0;
+
+  let html = `
+    <div class="pdf-preview">
+      <div class="pdf-header ${hasDefect?'has-defect':''}">
+        <div class="pdf-title">まいばすけっと 検質報告書</div>
+        <div class="pdf-info">${state.center}センター ｜ ${date} ｜ 担当: ${staff}</div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:10px">
+        <span>品目数: ${state.items.length}件</span>
+        <span style="color:#2ec98a">合格: ${pass}</span>
+        <span style="color:#e05565">不良: ${fail}</span>
+      </div>
+      <div class="pdf-grid">`;
+
+  state.items.slice(0, 8).forEach(it => {
+    const isOk = it.result === 'pass';
+    html += `
+        <div class="pdf-item">
+          <div class="pdf-item-name">${it.name}</div>
+          <div class="pdf-item-detail">${it.origin} / ${it.spec}</div>
+          <div class="${isOk?'pdf-result-ok':'pdf-result-ng'}">${isOk?'合格':it.result==='fail'?'不良':'未検査'}</div>
+        </div>`;
+  });
+
+  if (state.items.length > 8) {
+    html += '<div class="pdf-item" style="text-align:center;color:#999">... 他 '+(state.items.length-8)+'品目</div>';
+  }
+  html += '</div>';
+
+  if (hasDefect) {
+    html += '<div style="margin-top:10px;padding:8px;border:1px solid #e05565;border-radius:4px;font-size:10px"><strong style="color:#e05565">不良品レポート</strong>';
+    defects.forEach(d => {
+      html += '<div style="margin-top:4px">• '+d.name+' — '+(d.defectType||'')+ ' '+(d.defectNote||'')+'</div>';
+    });
+    html += '</div>';
+  }
+  html += '</div>';
+  document.getElementById('pdfPreview').innerHTML = html;
+}
+
+async function savePdf() {
+  showLoading('PDFを生成してDriveに保存中...');
+
+  const date = document.getElementById('inspDate').value;
+  const staff = document.getElementById('staffSelect').value || '';
+  const memo = '';
+
+  let result;
+  if (typeof gasSaveReport === 'function' && typeof gasSavePdf === 'function') {
+    // 1) 検査結果をスプレッドシートに保存
+    await gasSaveReport(state.center, date, staff, memo, state.items);
+    // 2) PDFを生成してDriveに保存
+    result = await gasSavePdf(state.center, date, staff, memo, state.items);
+  } else {
+    await sleep(1000);
+    const dateStr = date.replace(/-/g, '');
+    result = { ok:true, demo:true, fileName:'【'+state.center+'農産】検質報告書_'+dateStr+'店着.pdf' };
+  }
+
+  hideLoading();
+
+  if (result.ok) {
+    if (result.demo) {
+      toast('PDFを保存しました（デモモード）','success');
+    } else {
+      toast('PDFをDriveに保存しました: ' + result.fileName,'success');
+    }
+  } else {
+    toast('保存に失敗しました: ' + (result.message || ''),'error');
+  }
+}
+
+// ══════════════════════════════════════
+// Sheets直接読み取り（connector未読込時のフォールバック）
+// ══════════════════════════════════════
+function fetchStaffDirect(center) {
+  const ssIds = {
+    '大田': '13oodzjY7pnYiZ3VLdi6bOFutpiayLUfKlg63VQN7AMY',
+    '市川': '183EOuR0Hk9x--v15TaGWAxpTJVfk-D1z26JpHTqmTA8',
+    '浮島': '1DmidYcHZ8b8IPof5NAQuqurksfpGMtKYoxVG25IdIHk',
+  };
+  const ssId = ssIds[center];
+  if (!ssId) return Promise.reject(new Error('センター未設定'));
+
+  return new Promise(function(resolve, reject) {
+    var cbName = '_staffDirectCb_' + Date.now();
+    var timeout = setTimeout(function() {
+      delete window[cbName];
+      var el = document.getElementById(cbName);
+      if (el) el.remove();
+      reject(new Error('timeout'));
+    }, 8000);
+
+    window[cbName] = function(data) {
+      clearTimeout(timeout);
+      delete window[cbName];
+      var el = document.getElementById(cbName);
+      if (el) el.remove();
+      if (!data || data.status !== 'ok') { reject(new Error('query error')); return; }
+      var staff = (data.table.rows || [])
+        .map(function(r) { return r.c[0] && r.c[0].v ? String(r.c[0].v).trim() : ''; })
+        .filter(function(n) { return n && n !== '担当者名' && n !== '担当者'; });
+      resolve(staff);
+    };
+
+    window.google = window.google || {};
+    window.google.visualization = window.google.visualization || {};
+    window.google.visualization.Query = window.google.visualization.Query || {};
+    window.google.visualization.Query.setResponse = window[cbName];
+
+    var url = 'https://docs.google.com/spreadsheets/d/' + ssId
+      + '/gviz/tq?tqx=out:json&sheet=' + encodeURIComponent('担当者マスタ')
+      + '&tq=' + encodeURIComponent('SELECT A WHERE A IS NOT NULL');
+    var script = document.createElement('script');
+    script.id = cbName;
+    script.src = url;
+    script.onerror = function() {
+      clearTimeout(timeout);
+      delete window[cbName];
+      script.remove();
+      reject(new Error('script error'));
+    };
+    document.head.appendChild(script);
+  });
+}
+
+// ══════════════════════════════════════
+// Validation
+// ══════════════════════════════════════
+function goStepInfo() {
+  const staff = document.getElementById('staffSelect').value;
+  if (!staff) {
+    toast('担当者を選択してください','error');
+    document.getElementById('staffSelect').style.borderColor = 'var(--red)';
+    setTimeout(() => document.getElementById('staffSelect').style.borderColor = '', 2000);
+    return;
+  }
+  goStep(2);
+}
+
+// ══════════════════════════════════════
+// Utilities
+// ══════════════════════════════════════
+function toast(msg, type) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast ' + type + ' on';
+  setTimeout(() => el.classList.remove('on'), 2500);
+}
+
+function showLoading(msg) {
+  document.getElementById('loadingText').textContent = msg || '処理中...';
+  document.getElementById('loadingOverlay').classList.add('on');
+}
+function hideLoading() {
+  document.getElementById('loadingOverlay').classList.remove('on');
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// Enter key on password
+document.getElementById('pwInput').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') doLogin();
+});
+</script>
+</body>
+</html>
