@@ -574,48 +574,85 @@ textarea.form-input{resize:vertical;min-height:80px}
   <div class="modal-sheet">
     <div class="modal-handle"></div>
     <div class="modal-title" id="modalTitle">品目名</div>
-    <div class="modal-sub" id="modalSub">産地 / 規格 / 仕入先</div>
+    <div class="modal-sub" id="modalSub">産地 / 取引先</div>
 
-    <div class="sec-h">検査結果</div>
-    <div class="result-grid">
-      <div class="result-opt" id="optPass" onclick="setResult('pass')">
-        <div class="result-icon">✅</div>
-        <div class="result-text" style="color:var(--grn)">合格</div>
+    <!-- 数量入力 -->
+    <div class="sec-h">数量入力</div>
+    <div class="card">
+      <div class="form-group">
+        <label class="form-label">入荷数 <span style="color:var(--red);font-size:8px">必須</span></label>
+        <input type="number" class="form-input" id="modalArrival" placeholder="入荷数を入力" min="0" oninput="calcInspQty()">
       </div>
-      <div class="result-opt" id="optFail" onclick="setResult('fail')">
-        <div class="result-icon">❌</div>
-        <div class="result-text" style="color:var(--red)">不良</div>
+      <div class="form-group">
+        <label class="form-label">検質数（入荷数の10%自動計算・変更可）</label>
+        <input type="number" class="form-input" id="modalInspQty" placeholder="自動計算" min="0">
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">発注単位（変更可）</label>
+        <input type="text" class="form-input" id="modalUnit" placeholder="CS, kg, 袋...">
       </div>
     </div>
 
+    <!-- 検質画像 -->
+    <div class="sec-h">検質画像 <span style="color:var(--red);font-size:8px">2枚必須</span></div>
+    <div class="card">
+      <div class="photo-area" id="inspPhotoArea">
+        <label class="photo-thumb" id="inspPhotoAdd1">
+          <div style="text-align:center"><div style="font-size:20px">📷</div><div style="font-size:8px;color:var(--tx3)">1枚目</div></div>
+          <input type="file" accept="image/*" capture="environment" style="display:none" onchange="addInspPhoto(event,0)">
+        </label>
+        <label class="photo-thumb" id="inspPhotoAdd2">
+          <div style="text-align:center"><div style="font-size:20px">📷</div><div style="font-size:8px;color:var(--tx3)">2枚目</div></div>
+          <input type="file" accept="image/*" capture="environment" style="display:none" onchange="addInspPhoto(event,1)">
+        </label>
+      </div>
+    </div>
+
+    <!-- 不良入力 -->
+    <div class="sec-h">不良チェック</div>
+    <div class="card">
+      <div class="form-group">
+        <label class="form-label">不良数（不良がなければ空白のまま）</label>
+        <input type="number" class="form-input" id="modalDefectQty" placeholder="0" min="0" oninput="calcDefectRate()">
+      </div>
+      <div id="defectRateRow" style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <span style="font-size:10px;color:var(--tx2)">不良率:</span>
+        <span style="font-size:14px;font-weight:700;font-family:'JetBrains Mono',monospace" id="modalDefectRate">--</span>
+      </div>
+    </div>
+
+    <!-- 不良詳細（不良数>0で表示） -->
     <div id="defectFields" class="hidden">
-      <div class="sec-h">不良内容</div>
-      <div class="card" style="margin-bottom:8px">
-        <div class="form-group" style="margin-bottom:8px">
-          <label class="form-label">不良種別</label>
-          <select class="form-select" id="defectType">
-            <option value="">選択...</option>
-            <option>傷み</option>
-            <option>変色</option>
-            <option>サイズ不良</option>
-            <option>異物混入</option>
-            <option>温度逸脱</option>
-            <option>包装破損</option>
-            <option>その他</option>
-          </select>
+      <div class="sec-h">不良詳細 <span style="color:var(--red);font-size:8px">不良理由は必須</span></div>
+      <div class="card">
+        <div class="form-group">
+          <label class="form-label">不良理由</label>
+          <div style="display:flex;gap:6px;align-items:center">
+            <select class="form-select" id="defectReason" style="flex:1" onchange="onDefectReasonChange()">
+              <option value="">選択...</option>
+            </select>
+            <input type="text" class="form-input hidden" id="defectReasonText" placeholder="理由を入力" style="flex:1">
+          </div>
         </div>
         <div class="form-group" style="margin-bottom:0">
-          <label class="form-label">詳細コメント</label>
-          <textarea class="form-input" id="defectNote" placeholder="不良の詳細を入力..."></textarea>
+          <label class="form-label">コメント（任意）</label>
+          <textarea class="form-input" id="modalComment" placeholder="コメントがあれば入力..."></textarea>
         </div>
       </div>
 
-      <div class="sec-h">写真（任意）</div>
-      <div class="photo-area">
-        <label class="photo-thumb" id="photoAdd">
-          ＋
-          <input type="file" accept="image/*" capture="environment" style="display:none" onchange="addPhoto(event)">
-        </label>
+      <div class="sec-h">不良画像（最大2枚・任意）</div>
+      <div class="card" style="border-color:rgba(224,85,101,.2)">
+        <div style="font-size:10px;color:var(--tx3);margin-bottom:8px">欠品等の理由で画像がない場合は添付不要です</div>
+        <div class="photo-area" id="defectPhotoArea">
+          <label class="photo-thumb" id="defectPhotoAdd1">
+            <div style="text-align:center"><div style="font-size:20px">📷</div><div style="font-size:8px;color:var(--red)">不良1</div></div>
+            <input type="file" accept="image/*" capture="environment" style="display:none" onchange="addDefectPhoto(event,0)">
+          </label>
+          <label class="photo-thumb" id="defectPhotoAdd2">
+            <div style="text-align:center"><div style="font-size:20px">📷</div><div style="font-size:8px;color:var(--red)">不良2</div></div>
+            <input type="file" accept="image/*" capture="environment" style="display:none" onchange="addDefectPhoto(event,1)">
+          </label>
+        </div>
       </div>
     </div>
 
@@ -649,7 +686,12 @@ let state = {
   maxAttempts: 3,
   locked: false,
   staff: [],
-  items: [],        // [{name, origin, spec, supplier, result, defectType, defectNote, photos}]
+  defectReasons: [], // 不良マスタから読込
+  items: [],
+  // items構造: { name, origin, supplier, code, unit,
+  //   arrivalQty, inspQty, defectQty, defectRate,
+  //   defectReason, defectReasonText, comment,
+  //   inspPhotos[], defectPhotos[], idx }
   currentItem: -1,
   step: 0
 };
@@ -758,6 +800,7 @@ async function doLogin() {
     document.getElementById('centerLabel').textContent = state.center + 'センター — 基本情報を入力してください';
     document.getElementById('kpiCenter').textContent = state.center;
     loadStaff();
+    loadDefectReasons();
     goStep(1);
   } else {
     state.attempts++;
@@ -934,9 +977,17 @@ async function doImport() {
 // 取込データをUIに適用
 function applyImportData(result) {
   state.items = (result.items || []).map(function(it, i) {
-    return { name:it.name, origin:it.origin, spec:it.spec, supplier:it.supplier,
-             result:'', defectType:'', defectNote:'', photos:[], idx:i };
+    return {
+      name:it.name, origin:it.origin, supplier:it.supplier,
+      code:it.code||'', unit:it.unit||'',
+      arrivalQty:0, inspQty:0, defectQty:0, defectRate:0,
+      defectReason:'', defectReasonText:'', comment:'',
+      inspPhotos:[], defectPhotos:[], idx:i
+    };
   });
+
+  // 途中保存データがあれば復元
+  restoreProgress();
 
   var suppliers = [];
   state.items.forEach(function(it) {
@@ -954,81 +1005,173 @@ function applyImportData(result) {
 }
 
 // ══════════════════════════════════════
+// 不良マスタ読み込み
+// ══════════════════════════════════════
+async function loadDefectReasons() {
+  var reasons = [];
+  if (typeof fetchDefectMaster === 'function') {
+    try { reasons = await fetchDefectMaster(state.center); } catch(e) {}
+  }
+  if (!reasons.length) reasons = ['傷み','変色','サイズ不良','異物混入','温度逸脱','包装破損','欠品'];
+  state.defectReasons = reasons;
+}
+
+// ══════════════════════════════════════
 // Inspection
 // ══════════════════════════════════════
 function renderItems() {
-  const el = document.getElementById('itemList');
+  var el = document.getElementById('itemList');
   if (!state.items.length) {
     el.innerHTML = '<div style="text-align:center;color:var(--tx3);padding:20px">データがありません</div>';
     return;
   }
-  el.innerHTML = state.items.map((it, i) => {
-    let badge = '';
-    if (it.result === 'pass') badge = '<div class="item-btn pass">✓</div>';
-    else if (it.result === 'fail') badge = '<div class="item-btn fail">✗</div>';
+  el.innerHTML = state.items.map(function(it, i) {
+    var dq = Number(it.defectQty) || 0;
+    var done = it.arrivalQty > 0 && (it.inspPhotos || []).length >= 2;
+    var badge = '';
+    if (done && dq > 0) badge = '<div class="item-btn fail">✗</div>';
+    else if (done) badge = '<div class="item-btn pass">✓</div>';
     else badge = '<div class="item-btn">−</div>';
-    return `
-      <div class="item-row" onclick="openInspection(${i})">
-        <div class="item-num">${i+1}</div>
-        <div class="item-body">
-          <div class="item-name">${it.name}</div>
-          <div class="item-meta">${it.origin} / ${it.spec} / ${it.supplier}</div>
-        </div>
-        ${badge}
-      </div>`;
+    return '<div class="item-row" onclick="openInspection('+i+')">'
+      + '<div class="item-num">'+(i+1)+'</div>'
+      + '<div class="item-body">'
+      + '<div class="item-name">'+it.name+'</div>'
+      + '<div class="item-meta">'+it.origin+' / '+it.supplier+'</div>'
+      + '</div>'
+      + badge
+      + '</div>';
   }).join('');
 
-  const pass = state.items.filter(i=>i.result==='pass').length;
-  const fail = state.items.filter(i=>i.result==='fail').length;
+  var pass = state.items.filter(function(i) { return i.arrivalQty > 0 && (i.inspPhotos||[]).length >= 2 && !(Number(i.defectQty) > 0); }).length;
+  var fail = state.items.filter(function(i) { return Number(i.defectQty) > 0; }).length;
+  var done = state.items.filter(function(i) { return i.arrivalQty > 0 && (i.inspPhotos||[]).length >= 2; }).length;
   document.getElementById('passCount').innerHTML = pass + '<span class="kc-u">件</span>';
   document.getElementById('failCount').innerHTML = fail + '<span class="kc-u">件</span>';
   document.getElementById('inspSub').textContent =
-    state.center + 'センター — ' + state.items.length + '品目中 ' + (pass+fail) + '件検査済';
+    state.center + 'センター — ' + state.items.length + '品目中 ' + done + '件検査済';
 }
 
 function openInspection(idx) {
   state.currentItem = idx;
-  const it = state.items[idx];
+  var it = state.items[idx];
   document.getElementById('modalTitle').textContent = (idx+1) + '. ' + it.name;
-  document.getElementById('modalSub').textContent = it.origin + ' / ' + it.spec + ' / ' + it.supplier;
+  document.getElementById('modalSub').textContent = it.origin + ' / ' + it.supplier;
 
-  document.getElementById('optPass').className = 'result-opt';
-  document.getElementById('optFail').className = 'result-opt';
-  document.getElementById('defectFields').classList.add('hidden');
-  document.getElementById('defectType').value = it.defectType || '';
-  document.getElementById('defectNote').value = it.defectNote || '';
+  // 数量
+  document.getElementById('modalArrival').value = it.arrivalQty || '';
+  document.getElementById('modalInspQty').value = it.inspQty || '';
+  document.getElementById('modalUnit').value = it.unit || '';
 
-  if (it.result === 'pass') document.getElementById('optPass').classList.add('sel-pass');
-  if (it.result === 'fail') {
-    document.getElementById('optFail').classList.add('sel-fail');
-    document.getElementById('defectFields').classList.remove('hidden');
-  }
+  // 不良
+  document.getElementById('modalDefectQty').value = it.defectQty || '';
+  calcDefectRate();
+
+  // 不良理由プルダウン構築
+  var sel = document.getElementById('defectReason');
+  sel.innerHTML = '<option value="">選択...</option>';
+  state.defectReasons.forEach(function(r) { sel.innerHTML += '<option>'+r+'</option>'; });
+  sel.innerHTML += '<option value="その他（手入力）">その他（手入力）</option>';
+  sel.value = it.defectReason || '';
+  document.getElementById('defectReasonText').value = it.defectReasonText || '';
+  document.getElementById('defectReasonText').classList.toggle('hidden', it.defectReason !== 'その他（手入力）');
+  document.getElementById('modalComment').value = it.comment || '';
+
+  // 不良詳細表示/非表示
+  var dq = Number(it.defectQty) || 0;
+  document.getElementById('defectFields').classList.toggle('hidden', dq <= 0);
+
+  // 検質画像の表示復元
+  restorePhotoThumbs('inspPhotoAdd1', (it.inspPhotos||[])[0]);
+  restorePhotoThumbs('inspPhotoAdd2', (it.inspPhotos||[])[1]);
+  restorePhotoThumbs('defectPhotoAdd1', (it.defectPhotos||[])[0]);
+  restorePhotoThumbs('defectPhotoAdd2', (it.defectPhotos||[])[1]);
 
   document.getElementById('inspModal').classList.add('on');
 }
 
-function setResult(r) {
-  document.getElementById('optPass').className = 'result-opt';
-  document.getElementById('optFail').className = 'result-opt';
-  if (r === 'pass') {
-    document.getElementById('optPass').classList.add('sel-pass');
-    document.getElementById('defectFields').classList.add('hidden');
+function restorePhotoThumbs(labelId, dataUrl) {
+  var label = document.getElementById(labelId);
+  if (!label) return;
+  if (dataUrl) {
+    label.innerHTML = '<img src="'+dataUrl+'" style="width:100%;height:100%;object-fit:cover;border-radius:8px">'
+      + '<input type="file" accept="image/*" capture="environment" style="display:none" onchange="'+label.querySelector('input')?.getAttribute('onchange')+'">';
+    // Re-attach input
+    var origOnchange = labelId.indexOf('insp') >= 0
+      ? (labelId.indexOf('1') >= 0 ? 'addInspPhoto(event,0)' : 'addInspPhoto(event,1)')
+      : (labelId.indexOf('1') >= 0 ? 'addDefectPhoto(event,0)' : 'addDefectPhoto(event,1)');
+    label.innerHTML = '<img src="'+dataUrl+'" style="width:100%;height:100%;object-fit:cover;border-radius:8px">'
+      + '<input type="file" accept="image/*" capture="environment" style="display:none" onchange="'+origOnchange+'">';
   } else {
-    document.getElementById('optFail').classList.add('sel-fail');
-    document.getElementById('defectFields').classList.remove('hidden');
+    var isDefect = labelId.indexOf('defect') >= 0;
+    var num = labelId.indexOf('1') >= 0 ? '1' : '2';
+    var origOnchange = isDefect ? 'addDefectPhoto(event,'+(num-1)+')' : 'addInspPhoto(event,'+(num-1)+')';
+    var icon = isDefect ? '📷' : '📷';
+    var sublabel = isDefect ? '不良'+num : num+'枚目';
+    var color = isDefect ? 'var(--red)' : 'var(--tx3)';
+    label.innerHTML = '<div style="text-align:center"><div style="font-size:20px">'+icon+'</div><div style="font-size:8px;color:'+color+'">'+sublabel+'</div></div>'
+      + '<input type="file" accept="image/*" capture="environment" style="display:none" onchange="'+origOnchange+'">';
   }
-  state.items[state.currentItem].result = r;
+}
+
+function calcInspQty() {
+  var arr = Number(document.getElementById('modalArrival').value) || 0;
+  var calc = Math.max(1, Math.ceil(arr * 0.1));
+  document.getElementById('modalInspQty').value = arr > 0 ? calc : '';
+}
+
+function calcDefectRate() {
+  var dq = Number(document.getElementById('modalDefectQty').value) || 0;
+  var iq = Number(document.getElementById('modalInspQty').value) || 0;
+  var rateEl = document.getElementById('modalDefectRate');
+  if (dq > 0 && iq > 0) {
+    rateEl.textContent = (Math.round(dq / iq * 1000) / 10) + '%';
+    rateEl.style.color = 'var(--red)';
+  } else {
+    rateEl.textContent = '--';
+    rateEl.style.color = 'var(--tx2)';
+  }
+  // 不良数>0なら詳細表示
+  document.getElementById('defectFields').classList.toggle('hidden', dq <= 0);
+}
+
+function onDefectReasonChange() {
+  var sel = document.getElementById('defectReason');
+  document.getElementById('defectReasonText').classList.toggle('hidden', sel.value !== 'その他（手入力）');
 }
 
 function saveInspection() {
-  const it = state.items[state.currentItem];
-  if (!it.result) { toast('検査結果を選択してください','error'); return; }
-  if (it.result === 'fail') {
-    it.defectType = document.getElementById('defectType').value;
-    it.defectNote = document.getElementById('defectNote').value;
+  var it = state.items[state.currentItem];
+  var arrival = Number(document.getElementById('modalArrival').value) || 0;
+  var inspQty = Number(document.getElementById('modalInspQty').value) || 0;
+  var defectQty = Number(document.getElementById('modalDefectQty').value) || 0;
+
+  // バリデーション
+  if (!arrival) { toast('入荷数を入力してください','error'); return; }
+  if ((it.inspPhotos || []).length < 2) { toast('検質画像を2枚添付してください','error'); return; }
+  if (defectQty > 0) {
+    var reason = document.getElementById('defectReason').value;
+    if (!reason) { toast('不良理由を選択してください','error'); return; }
+    if (reason === 'その他（手入力）' && !document.getElementById('defectReasonText').value.trim()) {
+      toast('不良理由を入力してください','error'); return;
+    }
   }
+
+  // 保存
+  it.arrivalQty = arrival;
+  it.inspQty = inspQty;
+  it.unit = document.getElementById('modalUnit').value;
+  it.defectQty = defectQty;
+  it.defectRate = inspQty > 0 ? Math.round(defectQty / inspQty * 1000) / 10 : 0;
+  it.defectReason = defectQty > 0 ? document.getElementById('defectReason').value : '';
+  it.defectReasonText = defectQty > 0 ? document.getElementById('defectReasonText').value : '';
+  it.comment = document.getElementById('modalComment').value;
+
   closeModal();
   renderItems();
+
+  // 途中保存
+  autoSaveProgress();
+
   toast((state.currentItem+1) + '. ' + it.name + ' を保存しました','success');
 }
 
@@ -1036,54 +1179,116 @@ function closeModal() {
   document.getElementById('inspModal').classList.remove('on');
 }
 
-function addPhoto(ev) {
-  const file = ev.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
+// 検質画像添付
+function addInspPhoto(ev, idx) {
+  var file = ev.target.files[0]; if (!file) return;
+  var reader = new FileReader();
   reader.onload = function(e) {
-    state.items[state.currentItem].photos.push(e.target.result);
-    const area = document.querySelector('.photo-area');
-    const thumb = document.createElement('div');
-    thumb.className = 'photo-thumb';
-    thumb.innerHTML = '<img src="'+e.target.result+'">';
-    area.insertBefore(thumb, document.getElementById('photoAdd'));
+    var it = state.items[state.currentItem];
+    if (!it.inspPhotos) it.inspPhotos = [];
+    it.inspPhotos[idx] = e.target.result;
+    var labelId = idx === 0 ? 'inspPhotoAdd1' : 'inspPhotoAdd2';
+    restorePhotoThumbs(labelId, e.target.result);
   };
   reader.readAsDataURL(file);
   ev.target.value = '';
+}
+
+// 不良画像添付
+function addDefectPhoto(ev, idx) {
+  var file = ev.target.files[0]; if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var it = state.items[state.currentItem];
+    if (!it.defectPhotos) it.defectPhotos = [];
+    it.defectPhotos[idx] = e.target.result;
+    var labelId = idx === 0 ? 'defectPhotoAdd1' : 'defectPhotoAdd2';
+    restorePhotoThumbs(labelId, e.target.result);
+  };
+  reader.readAsDataURL(file);
+  ev.target.value = '';
+}
+
+// 途中保存
+function autoSaveProgress() {
+  var date = document.getElementById('inspDate').value;
+  if (typeof saveProgress === 'function') {
+    saveProgress(state.center, date, state.items);
+  } else {
+    try {
+      localStorage.setItem('kenshitsu_progress_'+state.center+'_'+date, JSON.stringify({
+        items: state.items, savedAt: new Date().toISOString()
+      }));
+    } catch(e) {}
+  }
+}
+
+// 途中データ復元
+function restoreProgress() {
+  var date = document.getElementById('inspDate').value;
+  var data = null;
+  if (typeof loadProgress === 'function') {
+    data = loadProgress(state.center, date);
+  } else {
+    try {
+      var raw = localStorage.getItem('kenshitsu_progress_'+state.center+'_'+date);
+      if (raw) data = JSON.parse(raw);
+    } catch(e) {}
+  }
+  if (data && data.items && data.items.length === state.items.length) {
+    // マスタ情報は保持しつつ入力データを復元
+    data.items.forEach(function(saved, i) {
+      if (state.items[i]) {
+        state.items[i].arrivalQty = saved.arrivalQty || 0;
+        state.items[i].inspQty = saved.inspQty || 0;
+        state.items[i].defectQty = saved.defectQty || 0;
+        state.items[i].defectRate = saved.defectRate || 0;
+        state.items[i].defectReason = saved.defectReason || '';
+        state.items[i].defectReasonText = saved.defectReasonText || '';
+        state.items[i].comment = saved.comment || '';
+        state.items[i].inspPhotos = saved.inspPhotos || [];
+        state.items[i].defectPhotos = saved.defectPhotos || [];
+      }
+    });
+    toast('前回の途中データを復元しました','success');
+    return true;
+  }
+  return false;
 }
 
 // ══════════════════════════════════════
 // Confirm / PDF（GAS連携）
 // ══════════════════════════════════════
 function buildConfirm() {
-  const pass = state.items.filter(i=>i.result==='pass').length;
-  const fail = state.items.filter(i=>i.result==='fail').length;
-  const total = state.items.length;
+  var pass = state.items.filter(function(i) { return i.arrivalQty > 0 && !(Number(i.defectQty) > 0); }).length;
+  var fail = state.items.filter(function(i) { return Number(i.defectQty) > 0; }).length;
+  var total = state.items.length;
 
   document.getElementById('cfCenter').textContent = state.center;
   document.getElementById('cfDate').textContent = document.getElementById('inspDate').value;
   document.getElementById('cfStaff').textContent = document.getElementById('staffSelect').value || '未選択';
   document.getElementById('cfTotal').textContent = total + '件';
 
-  const resultEl = document.getElementById('cfResult');
+  var resultEl = document.getElementById('cfResult');
   if (fail > 0) {
     resultEl.innerHTML = '<span class="tag tg">合格 '+pass+'</span> <span class="tag tr">不良 '+fail+'</span>';
   } else {
     resultEl.innerHTML = '<span class="tag tg">全品合格 '+pass+'件</span>';
   }
 
-  // Defect list
-  const defects = state.items.filter(i=>i.result==='fail');
-  const dl = document.getElementById('defectList');
+  var defects = state.items.filter(function(i) { return Number(i.defectQty) > 0; });
+  var dl = document.getElementById('defectList');
   if (defects.length) {
-    dl.innerHTML = defects.map(d => `
-      <div class="item-row">
-        <div class="item-num" style="background:var(--rbg);color:var(--red)">${d.idx+1}</div>
-        <div class="item-body">
-          <div class="item-name" style="color:var(--red)">${d.name}</div>
-          <div class="item-meta">${d.defectType || '種別未選択'} — ${d.defectNote || 'コメントなし'}</div>
-        </div>
-      </div>`).join('');
+    dl.innerHTML = defects.map(function(d) {
+      var reason = d.defectReason || '';
+      if (reason === 'その他（手入力）') reason = 'その他: '+(d.defectReasonText||'');
+      return '<div class="item-row">'
+        + '<div class="item-num" style="background:var(--rbg);color:var(--red)">'+(d.idx+1)+'</div>'
+        + '<div class="item-body">'
+        + '<div class="item-name" style="color:var(--red)">'+d.name+'</div>'
+        + '<div class="item-meta">不良'+d.defectQty+'個 ('+d.defectRate+'%) — '+reason+'</div>'
+        + '</div></div>';
+    }).join('');
   } else {
     dl.innerHTML = '<div style="font-size:12px;color:var(--grn);text-align:center;padding:10px">✓ 不良品はありません</div>';
   }
@@ -1092,42 +1297,44 @@ function buildConfirm() {
 }
 
 function buildPdfPreview(pass, fail, defects) {
-  const date = document.getElementById('inspDate').value;
-  const staff = document.getElementById('staffSelect').value || '--';
-  const hasDefect = defects.length > 0;
+  var date = document.getElementById('inspDate').value;
+  var staff = document.getElementById('staffSelect').value || '--';
+  var hasDefect = defects.length > 0;
 
-  let html = `
-    <div class="pdf-preview">
-      <div class="pdf-header ${hasDefect?'has-defect':''}">
-        <div class="pdf-title">まいばすけっと 検質報告書</div>
-        <div class="pdf-info">${state.center}センター ｜ ${date} ｜ 担当: ${staff}</div>
-      </div>
-      <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:10px">
-        <span>品目数: ${state.items.length}件</span>
-        <span style="color:#2ec98a">合格: ${pass}</span>
-        <span style="color:#e05565">不良: ${fail}</span>
-      </div>
-      <div class="pdf-grid">`;
+  var html = '<div class="pdf-preview">'
+    + '<div class="pdf-header '+(hasDefect?'has-defect':'')+'">'
+    + '<div class="pdf-title">まいばすけっと 検質報告書</div>'
+    + '<div class="pdf-info">'+state.center+'センター ｜ '+date+' ｜ 担当: '+staff+'</div></div>'
+    + '<div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:10px">'
+    + '<span>品目数: '+state.items.length+'件</span>'
+    + '<span style="color:#2ec98a">合格: '+pass+'</span>'
+    + '<span style="color:#e05565">不良: '+fail+'</span></div>'
+    + '<table style="width:100%;border-collapse:collapse;font-size:9px">'
+    + '<tr style="background:#f0f0f0"><th style="padding:3px;border:1px solid #ddd;text-align:left">#</th>'
+    + '<th style="padding:3px;border:1px solid #ddd;text-align:left">商品名</th>'
+    + '<th style="padding:3px;border:1px solid #ddd">入荷</th>'
+    + '<th style="padding:3px;border:1px solid #ddd">検質</th>'
+    + '<th style="padding:3px;border:1px solid #ddd">不良</th>'
+    + '<th style="padding:3px;border:1px solid #ddd">結果</th></tr>';
 
-  state.items.slice(0, 8).forEach(it => {
-    const isOk = it.result === 'pass';
-    html += `
-        <div class="pdf-item">
-          <div class="pdf-item-name">${it.name}</div>
-          <div class="pdf-item-detail">${it.origin} / ${it.spec}</div>
-          <div class="${isOk?'pdf-result-ok':'pdf-result-ng'}">${isOk?'合格':it.result==='fail'?'不良':'未検査'}</div>
-        </div>`;
+  state.items.forEach(function(it, i) {
+    var dq = Number(it.defectQty) || 0;
+    var cls = dq > 0 ? 'color:#e05565;font-weight:700' : 'color:#2ec98a';
+    html += '<tr><td style="padding:2px 3px;border:1px solid #ddd">'+(i+1)+'</td>'
+      + '<td style="padding:2px 3px;border:1px solid #ddd">'+it.name+'</td>'
+      + '<td style="padding:2px 3px;border:1px solid #ddd;text-align:center">'+(it.arrivalQty||'')+'</td>'
+      + '<td style="padding:2px 3px;border:1px solid #ddd;text-align:center">'+(it.inspQty||'')+'</td>'
+      + '<td style="padding:2px 3px;border:1px solid #ddd;text-align:center">'+(dq||'')+'</td>'
+      + '<td style="padding:2px 3px;border:1px solid #ddd;text-align:center;'+cls+'">'+(dq>0?'不良':'合格')+'</td></tr>';
   });
-
-  if (state.items.length > 8) {
-    html += '<div class="pdf-item" style="text-align:center;color:#999">... 他 '+(state.items.length-8)+'品目</div>';
-  }
-  html += '</div>';
+  html += '</table>';
 
   if (hasDefect) {
     html += '<div style="margin-top:10px;padding:8px;border:1px solid #e05565;border-radius:4px;font-size:10px"><strong style="color:#e05565">不良品レポート</strong>';
-    defects.forEach(d => {
-      html += '<div style="margin-top:4px">• '+d.name+' — '+(d.defectType||'')+ ' '+(d.defectNote||'')+'</div>';
+    defects.forEach(function(d) {
+      var reason = d.defectReason || '';
+      if (reason === 'その他（手入力）') reason = 'その他: '+(d.defectReasonText||'');
+      html += '<div style="margin-top:4px">• '+d.name+' — 不良'+d.defectQty+'個 ('+d.defectRate+'%) '+reason+'</div>';
     });
     html += '</div>';
   }
@@ -1140,19 +1347,37 @@ async function savePdf() {
 
   const date = document.getElementById('inspDate').value;
   const staff = document.getElementById('staffSelect').value || '';
-  const memo = '';
+  var memo = '';
 
   let result;
   if (typeof gasSaveReport === 'function' && typeof gasSavePdf === 'function') {
     // 1) 検査結果をスプレッドシートに保存
-    await gasSaveReport(state.center, date, staff, memo, state.items);
-    // 2) PDFを生成してDriveに保存
-    result = await gasSavePdf(state.center, date, staff, memo, state.items);
+    await gasSaveReport(state.center, date, staff, state.items);
+    // 2) 不良画像をDriveに保存
+    if (typeof gasSaveDefectImage === 'function') {
+      var deliveryDate = calcDeliveryDate(date);
+      for (var i = 0; i < state.items.length; i++) {
+        var it = state.items[i];
+        if (it.defectPhotos) {
+          for (var j = 0; j < it.defectPhotos.length; j++) {
+            if (it.defectPhotos[j]) {
+              await gasSaveDefectImage(state.center, deliveryDate, it.name, it.defectPhotos[j], j+1);
+            }
+          }
+        }
+      }
+    }
+    // 3) PDFを生成してDriveに保存
+    result = await gasSavePdf(state.center, date, staff, state.items);
   } else {
     await sleep(1000);
-    const dateStr = date.replace(/-/g, '');
+    var dateStr = date.replace(/-/g, '');
     result = { ok:true, demo:true, fileName:'【'+state.center+'農産】検質報告書_'+dateStr+'店着.pdf' };
   }
+
+  // 途中保存データをクリア
+  if (typeof clearProgress === 'function') clearProgress(state.center, date);
+  else try { localStorage.removeItem('kenshitsu_progress_'+state.center+'_'+date); } catch(e) {}
 
   hideLoading();
 
