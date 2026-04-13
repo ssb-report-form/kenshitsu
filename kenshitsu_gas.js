@@ -47,12 +47,22 @@ const CONFIG = {
   },
 
   // ── Excel列マッピング（0-indexed） ─────────────────────────
-  // C列=●フラグ, K列=産地, M列=品名, Z列=取引先名
+  // C=●, K=産地, M=品名, Q=商品コード, S=発注単位, Z=取引先
   EXCEL_COLS: {
     FLAG:     2,   // C列 "●"
     ORIGIN:   10,  // K列 産地
     PRODUCT:  12,  // M列 品名
+    CODE:     16,  // Q列 商品コード
+    UNIT:     18,  // S列 発注単位
     SUPPLIER: 25,  // Z列 取引先名
+  },
+
+  // ── Google Drive フォルダID（不良画像保存先） ──────────────
+  // 後でフォルダURLを設定してください
+  DEFECT_IMAGE_FOLDERS: {
+    "大田": "ここに大田用フォルダIDを貼り付け",
+    "市川": "ここに市川用フォルダIDを貼り付け",
+    "浮島": "ここに浮島用フォルダIDを貼り付け",
   },
 
   // ── PDF設定 ────────────────────────────────────────────────
@@ -85,6 +95,7 @@ function doPost(e) {
       case "importExcel":  return handleImportExcel(data);
       case "listFiles":    return handleListFiles(data);
       case "saveReport":   return handleSaveReport(data);
+      case "saveDefectImage": return handleSaveDefectImage(data);
       case "savePdf":      return handleSavePdf(data);
       default:             return ok({ message: "unknown action: " + data.action });
     }
@@ -397,6 +408,8 @@ function handleImportExcel(data) {
       items.push({
         name:     productName,
         origin:   String(row[C.ORIGIN]   || "").trim(),
+        code:     String(row[C.CODE]     || "").trim(),
+        unit:     String(row[C.UNIT]     || "").trim(),
         supplier: matchedSupplier,
       });
     }
@@ -439,44 +452,111 @@ function convertExcelToSheet(excelFile) {
 // ═══════════════════════════════════════════════════════════════
 
 function handleSaveReport(data) {
-  const { center, date, staff, memo, items } = data;
+  const { center, date, staff, items } = data;
+
+  // 店着日 = 検査日+1
+  var inspDate = new Date(date);
+  var deliveryDate = new Date(inspDate);
+  deliveryDate.setDate(deliveryDate.getDate() + 1);
+  var deliveryStr = Utilities.formatDate(deliveryDate, "Asia/Tokyo", "yyyy-MM-dd");
 
   // センター別スプレッドシートを開く
   const ssId = CONFIG.REPORT_SPREADSHEETS[center];
   if (!ssId || ssId.indexOf("ここに") >= 0) {
-    return error("センター「" + center + "」の検査結果用スプレッドシートIDが未設定です");
+    return error("センター「" + center + "」のスプレッドシートIDが未設定です");
   }
   const ss = SpreadsheetApp.openById(ssId);
 
-  let reportSheet = getOrCreateSheet(ss, "reports", [
-    "タイムスタンプ", "検査日", "担当者",
-    "品目名", "産地", "規格", "仕入先", "結果", "不良種別", "不良詳細"
+  // ── シート「検質報告」 ── 全品目の検査結果
+  var reportSheet = getOrCreateSheet(ss, "検質報告", [
+    "タイムスタンプ", "店着日", "担当者", "商品コード", "商品名", "産地",
+    "取引先", "発注単位", "入荷数", "検質数", "不良数", "不良率",
+    "結果", "不良理由", "コメント"
   ]);
 
-  const timestamp = new Date().toLocaleString("ja-JP");
+  // ── シート「検質不良」 ── 不良品のみ
+  var defectSheet = getOrCreateSheet(ss, "検質不良", [
+    "日付(店着日)", "取引先名", "商品コード", "商品名", "産地",
+    "発注単位", "対象数(検質数合計)", "入荷数", "検質数(10%)",
+    "不良数", "不良理由"
+  ]);
 
-  // 各品目を1行ずつ記録
-  items.forEach(function(item) {
+  var timestamp = new Date().toLocaleString("ja-JP");
+  var parsedItems = (typeof items === "string") ? JSON.parse(items) : items;
+  var totalInspQty = 0;
+  parsedItems.forEach(function(it) { totalInspQty += (Number(it.inspQty) || 0); });
+
+  // 各品目を記録
+  parsedItems.forEach(function(item) {
+    var arrivalQty = Number(item.arrivalQty) || 0;
+    var inspQty = Number(item.inspQty) || 0;
+    var defectQty = Number(item.defectQty) || 0;
+    var defectRate = inspQty > 0 ? Math.round(defectQty / inspQty * 1000) / 10 : 0;
+    var result = defectQty > 0 ? "不良" : "合格";
+    var reason = item.defectReason || "";
+    if (reason === "その他（手入力）" && item.defectReasonText) {
+      reason = "その他: " + item.defectReasonText;
+    }
+
+    // 検質報告シート
     reportSheet.appendRow([
-      timestamp,
-      date,
-      staff,
-      item.name,
-      item.origin,
-      item.spec,
-      item.supplier,
-      item.result === "pass" ? "合格" : item.result === "fail" ? "不良" : "未検査",
-      item.defectType || "",
-      item.defectNote || "",
+      timestamp, deliveryStr, staff,
+      item.code || "", item.name || "", item.origin || "",
+      item.supplier || "", item.unit || "",
+      arrivalQty, inspQty, defectQty,
+      defectRate > 0 ? defectRate + "%" : "",
+      result, reason, item.comment || ""
     ]);
+
+    // 検質不良シート（不良品のみ）
+    if (defectQty > 0) {
+      defectSheet.appendRow([
+        deliveryStr, item.supplier || "",
+        item.code || "", item.name || "", item.origin || "",
+        item.unit || "", totalInspQty,
+        arrivalQty, inspQty, defectQty, reason
+      ]);
+    }
   });
 
   return ok({
     saved: true,
-    count: items.length,
+    count: parsedItems.length,
+    defects: parsedItems.filter(function(i) { return (Number(i.defectQty) || 0) > 0; }).length,
     center: center,
-    date: date
+    deliveryDate: deliveryStr
   });
+}
+
+
+// ═══════════════════════════════════════════════════════════════
+// 5b. 不良画像をDriveに保存
+// ═══════════════════════════════════════════════════════════════
+
+function handleSaveDefectImage(data) {
+  var center = data.center;
+  var deliveryDate = data.deliveryDate || "";
+  var productName = data.productName || "unknown";
+  var imageData = data.imageData || "";  // base64
+  var index = data.index || 1;
+
+  var folderId = CONFIG.DEFECT_IMAGE_FOLDERS[center];
+  if (!folderId || folderId.indexOf("ここに") >= 0) {
+    return error("不良画像フォルダが未設定です（" + center + "）");
+  }
+
+  try {
+    var folder = DriveApp.getFolderById(folderId);
+    // base64 → Blob
+    var base64 = imageData.replace(/^data:image\/\w+;base64,/, "");
+    var blob = Utilities.newBlob(Utilities.base64Decode(base64), "image/jpeg",
+      deliveryDate + "_" + productName + "_" + index + ".jpg");
+    var file = folder.createFile(blob);
+    return ok({ fileId: file.getId(), fileName: file.getName(), fileUrl: file.getUrl() });
+  } catch (e) {
+    Logger.log("saveDefectImage error: " + e);
+    return error("画像保存に失敗: " + e.toString());
+  }
 }
 
 
@@ -517,77 +597,140 @@ function handleSavePdf(data) {
 }
 
 function buildPdfHtml(center, date, staff, memo, items) {
-  const P = CONFIG.PDF;
-  const pass = items.filter(function(i) { return i.result === "pass"; }).length;
-  const fail = items.filter(function(i) { return i.result === "fail"; }).length;
-  const defects = items.filter(function(i) { return i.result === "fail"; });
-  const hasDefect = defects.length > 0;
-
-  let html = '<!DOCTYPE html><html><head><meta charset="UTF-8">';
-  html += '<style>';
-  html += 'body{font-family:"Noto Sans JP",sans-serif;font-size:10px;margin:20px;color:#333}';
-  html += '.header{text-align:center;padding:12px;border-bottom:3px solid ' + (hasDefect ? P.HEADER_NG : P.HEADER_OK) + ';margin-bottom:16px}';
-  html += '.title{font-size:16px;font-weight:700}';
-  html += '.info{font-size:10px;color:#666;margin-top:4px}';
-  html += '.summary{display:flex;justify-content:space-between;margin-bottom:12px;font-size:11px}';
-  html += '.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}';
-  html += '.item{border:1px solid #ddd;border-radius:4px;padding:8px}';
-  html += '.item-name{font-weight:700;margin-bottom:2px}';
-  html += '.item-meta{color:#666;font-size:9px}';
-  html += '.ok{color:' + P.HEADER_OK + ';font-weight:700}';
-  html += '.ng{color:' + P.HEADER_NG + ';font-weight:700}';
-  html += '.defect-page{page-break-before:always;margin-top:20px}';
-  html += '.defect-header{text-align:center;padding:12px;border-bottom:3px solid ' + P.HEADER_NG + ';margin-bottom:16px}';
-  html += '.defect-item{border:1px solid ' + P.HEADER_NG + ';border-radius:4px;padding:10px;margin-bottom:8px}';
-  html += '</style></head><body>';
-
-  // ── ヘッダー
-  html += '<div class="header">';
-  html += '<div class="title">まいばすけっと 検質報告書</div>';
-  html += '<div class="info">' + center + 'センター ｜ ' + date + ' ｜ 担当: ' + staff + '</div>';
-  if (memo) html += '<div class="info">備考: ' + memo + '</div>';
-  html += '</div>';
-
-  // ── サマリー
-  html += '<div class="summary">';
-  html += '<span>品目数: ' + items.length + '件</span>';
-  html += '<span class="ok">合格: ' + pass + '</span>';
-  html += '<span class="ng">不良: ' + fail + '</span>';
-  html += '</div>';
-
-  // ── 品目グリッド（2列、4品/ページ）
-  html += '<div class="grid">';
-  items.forEach(function(item, idx) {
-    // ページ区切り (4品ごと、ただし最初は除く)
-    if (idx > 0 && idx % P.ITEMS_PER_PAGE === 0) {
-      html += '</div><div style="page-break-before:always"></div><div class="grid">';
-    }
-    var resultClass = item.result === "pass" ? "ok" : item.result === "fail" ? "ng" : "";
-    var resultText  = item.result === "pass" ? "合格" : item.result === "fail" ? "不良" : "未検査";
-    html += '<div class="item">';
-    html += '<div class="item-name">' + (idx + 1) + '. ' + escapeHtml(item.name) + '</div>';
-    html += '<div class="item-meta">' + escapeHtml(item.origin) + ' / ' + escapeHtml(item.spec) + ' / ' + escapeHtml(item.supplier) + '</div>';
-    html += '<div class="' + resultClass + '">' + resultText + '</div>';
-    html += '</div>';
+  var parsedItems = (typeof items === "string") ? JSON.parse(items) : items;
+  var hasDefect = parsedItems.some(function(i) { return Number(i.defectQty) > 0; });
+  var totalArrival = 0, totalInsp = 0;
+  parsedItems.forEach(function(i) {
+    totalArrival += (Number(i.arrivalQty) || 0);
+    totalInsp += (Number(i.inspQty) || 0);
   });
-  html += '</div>';
+  var inspRate = totalArrival > 0 ? (Math.round(totalInsp / totalArrival * 1000) / 10) : 0;
+  var totalPages = Math.ceil(parsedItems.length / 4);
 
-  // ── 不良品レポートページ（不良品がある場合のみ追加）
-  if (hasDefect) {
-    html += '<div class="defect-page">';
-    html += '<div class="defect-header"><div class="title">不良品レポート</div>';
-    html += '<div class="info">' + center + 'センター ｜ ' + date + ' ｜ 不良 ' + fail + '件</div></div>';
+  var css = [
+    '*{box-sizing:border-box;margin:0;padding:0}',
+    'body{font-family:"Noto Sans JP","Hiragino Sans",sans-serif;font-size:9px;color:#333;margin:0}',
+    '.page{width:210mm;min-height:297mm;padding:12mm 15mm;position:relative;page-break-after:always}',
+    '.page:last-child{page-break-after:auto}',
+    // Title
+    '.doc-title{text-align:center;font-size:18px;font-weight:700;border:2px solid #333;padding:8px 0;margin-bottom:6px}',
+    '.doc-page{position:absolute;top:12mm;right:15mm;font-size:9px;color:#666}',
+    '.doc-to{font-size:10px;margin-bottom:2px}',
+    // Item list
+    '.item-list{font-size:8px;margin:6px 0 8px;columns:2;column-gap:12px;line-height:1.6}',
+    '.center-label{float:right;font-size:11px;font-weight:700;margin-top:-18px}',
+    // Summary bar
+    '.summary-bar{display:flex;border:1px solid #999;margin-bottom:10px}',
+    '.sb-cell{flex:1;text-align:center;padding:4px 2px;border-right:1px solid #999;font-size:8px}',
+    '.sb-cell:last-child{border-right:none}',
+    '.sb-label{font-size:7px;color:#666;margin-bottom:2px}',
+    '.sb-val{font-size:12px;font-weight:700}',
+    '.sb-warn{background:#e05565;color:#fff}',
+    '.sb-ok{background:#2ec98a;color:#fff}',
+    // Card grid
+    '.card-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}',
+    '.card{border:1px solid #ccc;border-radius:0;overflow:hidden;page-break-inside:avoid}',
+    '.card-head{padding:4px 8px;font-size:11px;font-weight:700;color:#fff}',
+    '.card-head-ok{background:#2ec98a}',
+    '.card-head-ng{background:#c0392b}',
+    '.card-body{padding:6px 8px;font-size:8px}',
+    '.card-row{display:flex;justify-content:space-between;margin-bottom:2px}',
+    '.card-label{color:#666}',
+    '.card-val{font-weight:600}',
+    '.card-reason{margin-top:2px;padding:2px 4px;background:#fff0f0;border-left:3px solid #e05565;font-size:8px}',
+    '.card-comment{margin-top:2px;font-size:8px;color:#666}',
+    '.card-photos{display:flex;gap:4px;margin-top:4px}',
+    '.card-photo{width:48%;aspect-ratio:4/3;background:#f0f0f0;border:1px solid #ddd;display:flex;align-items:center;justify-content:center;font-size:7px;color:#999}',
+    // Footer
+    '.doc-footer{position:absolute;bottom:8mm;left:15mm;right:15mm;font-size:7px;color:#999;display:flex;justify-content:space-between;border-top:1px solid #ccc;padding-top:3px}',
+  ].join('\n');
 
-    defects.forEach(function(d, idx) {
-      html += '<div class="defect-item">';
-      html += '<div style="font-weight:700;color:' + CONFIG.PDF.HEADER_NG + '">' + escapeHtml(d.name) + '</div>';
-      html += '<div class="item-meta">' + escapeHtml(d.origin) + ' / ' + escapeHtml(d.spec) + ' / ' + escapeHtml(d.supplier) + '</div>';
-      html += '<div style="margin-top:4px"><strong>種別:</strong> ' + escapeHtml(d.defectType || "未選択") + '</div>';
-      html += '<div><strong>詳細:</strong> ' + escapeHtml(d.defectNote || "なし") + '</div>';
+  var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>' + css + '</style></head><body>';
+
+  // ページごとに4品目ずつ
+  for (var page = 0; page < totalPages; page++) {
+    var pageItems = parsedItems.slice(page * 4, (page + 1) * 4);
+    html += '<div class="page">';
+
+    // ヘッダー（1ページ目のみフル表示）
+    html += '<div class="doc-page">' + (page+1) + ' / ' + totalPages + '</div>';
+    html += '<div class="doc-title">【まいばすけっと検質報告書】</div>';
+
+    if (page === 0) {
+      html += '<div class="doc-to">まいばすけっと株式会社　御中</div>';
+      html += '<div class="center-label">' + escapeHtml(center) + '農産センター</div>';
+
+      // 品目一覧
+      html += '<div style="font-size:8px;font-weight:600;margin:4px 0 2px">今回の検質品目</div>';
+      html += '<div class="item-list">';
+      parsedItems.forEach(function(it, idx) {
+        html += '<div>' + (idx+1) + '. ' + escapeHtml(it.name) + '</div>';
+      });
       html += '</div>';
-    });
 
+      // サマリーバー
+      html += '<div class="summary-bar">';
+      html += '<div class="sb-cell"><div class="sb-label">検査日</div><div class="sb-val">' + date + '</div></div>';
+      html += '<div class="sb-cell"><div class="sb-label">担当者</div><div class="sb-val">' + escapeHtml(staff) + '</div></div>';
+      html += '<div class="sb-cell ' + (hasDefect ? 'sb-warn' : 'sb-ok') + '"><div class="sb-label">検質判定</div><div class="sb-val">' + (hasDefect ? '有' : '無') + '</div></div>';
+      html += '<div class="sb-cell"><div class="sb-label">検質数</div><div class="sb-val">' + totalInsp + ' ps</div></div>';
+      html += '<div class="sb-cell"><div class="sb-label">入荷数合計</div><div class="sb-val">' + totalArrival + ' ps</div></div>';
+      html += '<div class="sb-cell"><div class="sb-label">検質率</div><div class="sb-val">' + inspRate + '%</div></div>';
+      html += '</div>';
+    }
+
+    // カードグリッド（2x2）
+    html += '<div class="card-grid">';
+    pageItems.forEach(function(item) {
+      var dq = Number(item.defectQty) || 0;
+      var iq = Number(item.inspQty) || 0;
+      var aq = Number(item.arrivalQty) || 0;
+      var rate = iq > 0 ? (Math.round(dq / iq * 1000) / 10) : 0;
+      var isNG = dq > 0;
+      var reason = item.defectReason || '';
+      if (reason === 'その他（手入力）' && item.defectReasonText) reason = 'その他: ' + item.defectReasonText;
+
+      html += '<div class="card">';
+      html += '<div class="card-head ' + (isNG ? 'card-head-ng' : 'card-head-ok') + '">';
+      html += escapeHtml(item.name);
+      if (isNG) html += '　<span style="font-size:8px">⚠ 不良あり</span>';
+      html += '</div>';
+      html += '<div class="card-body">';
+      html += '<div class="card-row"><span class="card-label">仕入先</span><span class="card-val">' + escapeHtml(item.supplier) + '</span></div>';
+      html += '<div class="card-row"><span class="card-label">産地</span><span class="card-val">' + escapeHtml(item.origin) + '</span></div>';
+      html += '<div class="card-row"><span class="card-label">入荷数</span><span class="card-val">' + aq + ' ps</span></div>';
+      html += '<div class="card-row"><span class="card-label">検質数</span><span class="card-val">' + iq + ' ps</span></div>';
+      html += '<div class="card-row"><span class="card-label">不良数</span><span class="card-val" style="color:' + (isNG ? '#e05565' : '#333') + '">' + dq + ' ps</span></div>';
+      html += '<div class="card-row"><span class="card-label">不良率</span><span class="card-val">' + rate + '%</span></div>';
+
+      if (isNG && reason) {
+        html += '<div class="card-reason">不良理由: ' + escapeHtml(reason) + '</div>';
+      }
+      html += '<div class="card-comment">コメント: ' + escapeHtml(item.comment || '特に問題無し') + '</div>';
+
+      // 写真プレースホルダー
+      html += '<div class="card-photos">';
+      html += '<div class="card-photo">検質1</div>';
+      html += '<div class="card-photo">検質2</div>';
+      html += '</div>';
+      if (isNG) {
+        html += '<div class="card-photos">';
+        html += '<div class="card-photo" style="border-color:#e05565">不良1</div>';
+        html += '<div class="card-photo" style="border-color:#e05565">不良2</div>';
+        html += '</div>';
+      }
+
+      html += '</div></div>'; // card-body, card
+    });
+    html += '</div>'; // card-grid
+
+    // フッター
+    html += '<div class="doc-footer">';
+    html += '<span>' + escapeHtml(center) + '農産センター</span>';
+    html += '<span>' + (page+1) + ' / ' + totalPages + '</span>';
     html += '</div>';
+
+    html += '</div>'; // page
   }
 
   html += '</body></html>';

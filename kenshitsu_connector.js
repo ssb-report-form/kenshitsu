@@ -428,7 +428,8 @@ async function gasImportExcel(center, fileId) {
     var supplierMaster = await supplierMasterPromise;
     var items = (result.data.items || []).map(function(it) {
       return {
-        name: it.name, origin: it.origin, spec: it.spec,
+        name: it.name, origin: it.origin,
+        code: it.code || "", unit: it.unit || "",
         supplier: matchSupplier(it.supplier, supplierMaster),
       };
     });
@@ -456,18 +457,18 @@ function demoImportExcel(center) {
   tue.setDate(wed.getDate() + 6);
 
   var items = [
-    { name: "キャベツ",       origin: "群馬",       spec: "L",          supplier: "丸果" },
-    { name: "トマト",         origin: "熊本",       spec: "2L/24玉",    supplier: "大果" },
-    { name: "レタス",         origin: "長野",       spec: "L",          supplier: "丸果" },
-    { name: "きゅうり",       origin: "埼玉",       spec: "M/50本",     supplier: "大果" },
-    { name: "にんじん",       origin: "北海道",     spec: "L/10kg",     supplier: "ベジテック" },
-    { name: "ブロッコリー",   origin: "愛知",       spec: "L",          supplier: "丸果" },
-    { name: "ほうれん草",     origin: "群馬",       spec: "200g束",     supplier: "大果" },
-    { name: "バナナ",         origin: "フィリピン", spec: "13kg/箱",    supplier: "ドール" },
-    { name: "りんご",         origin: "青森",       spec: "28玉",       supplier: "丸果" },
-    { name: "みかん",         origin: "和歌山",     spec: "S/10kg",     supplier: "ベジテック" },
-    { name: "じゃがいも",     origin: "北海道",     spec: "L/10kg",     supplier: "大果" },
-    { name: "たまねぎ",       origin: "北海道",     spec: "L/20kg",     supplier: "ベジテック" },
+    { name: "キャベツ",       origin: "群馬",       code: "4901001", unit: "CS", supplier: "丸果" },
+    { name: "トマト",         origin: "熊本",       code: "4901002", unit: "CS", supplier: "大果" },
+    { name: "レタス",         origin: "長野",       code: "4901003", unit: "CS", supplier: "丸果" },
+    { name: "きゅうり",       origin: "埼玉",       code: "4901004", unit: "袋", supplier: "大果" },
+    { name: "にんじん",       origin: "北海道",     code: "4901005", unit: "kg", supplier: "ベジテック" },
+    { name: "ブロッコリー",   origin: "愛知",       code: "4901006", unit: "CS", supplier: "丸果" },
+    { name: "ほうれん草",     origin: "群馬",       code: "4901007", unit: "束", supplier: "大果" },
+    { name: "バナナ",         origin: "フィリピン", code: "4901008", unit: "箱", supplier: "ドール" },
+    { name: "りんご",         origin: "青森",       code: "4901009", unit: "CS", supplier: "丸果" },
+    { name: "みかん",         origin: "和歌山",     code: "4901010", unit: "kg", supplier: "ベジテック" },
+    { name: "じゃがいも",     origin: "北海道",     code: "4901011", unit: "kg", supplier: "大果" },
+    { name: "たまねぎ",       origin: "北海道",     code: "4901012", unit: "kg", supplier: "ベジテック" },
   ];
 
   var importData = {
@@ -486,27 +487,114 @@ function demoImportExcel(center) {
 
 
 // ═══════════════════════════════════════════════════════════════
+// 不良マスタ読み込み（JSONP方式）
+// ═══════════════════════════════════════════════════════════════
+
+function fetchDefectMaster(center) {
+  var ssId = REPORT_SS_IDS[center];
+  if (!ssId) return Promise.resolve([]);
+
+  return new Promise(function(resolve) {
+    var cbName = "_defectCb_" + Date.now();
+    var timeout = setTimeout(function() {
+      delete window[cbName]; var el = document.getElementById(cbName); if (el) el.remove();
+      resolve([]);
+    }, 8000);
+
+    window[cbName] = function(data) {
+      clearTimeout(timeout); delete window[cbName];
+      var el = document.getElementById(cbName); if (el) el.remove();
+      if (!data || data.status !== "ok") { resolve([]); return; }
+      var reasons = (data.table.rows || [])
+        .map(function(r) { return r.c[0] && r.c[0].v ? String(r.c[0].v).trim() : ""; })
+        .filter(function(n) { return n && n !== "不良理由" && n !== "理由"; });
+      resolve(reasons);
+    };
+
+    window.google = window.google || {};
+    window.google.visualization = window.google.visualization || {};
+    window.google.visualization.Query = window.google.visualization.Query || {};
+    window.google.visualization.Query.setResponse = window[cbName];
+
+    var url = "https://docs.google.com/spreadsheets/d/" + ssId
+      + "/gviz/tq?tqx=out:json&sheet=" + encodeURIComponent("不良マスタ")
+      + "&tq=" + encodeURIComponent("SELECT A WHERE A IS NOT NULL");
+    var script = document.createElement("script");
+    script.id = cbName; script.src = url;
+    script.onerror = function() { clearTimeout(timeout); delete window[cbName]; script.remove(); resolve([]); };
+    document.head.appendChild(script);
+  });
+}
+
+
+// ═══════════════════════════════════════════════════════════════
+// 途中保存（localStorage）
+// ═══════════════════════════════════════════════════════════════
+
+function progressKey(center, date) {
+  return "kenshitsu_progress_" + center + "_" + date;
+}
+
+function saveProgress(center, date, items) {
+  try {
+    localStorage.setItem(progressKey(center, date), JSON.stringify({
+      items: items, savedAt: new Date().toISOString()
+    }));
+  } catch (e) { console.warn("saveProgress failed:", e); }
+}
+
+function loadProgress(center, date) {
+  try {
+    var raw = localStorage.getItem(progressKey(center, date));
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) { return null; }
+}
+
+function clearProgress(center, date) {
+  try { localStorage.removeItem(progressKey(center, date)); } catch (e) {}
+}
+
+
+// ═══════════════════════════════════════════════════════════════
 // API: 検査結果保存
 // ═══════════════════════════════════════════════════════════════
 
-async function gasSaveReport(center, date, staff, memo, items) {
+async function gasSaveReport(center, date, staff, items) {
   if (DEMO_MODE) return demoSaveReport();
 
-  const result = await callGAS("saveReport", {
-    center, date, staff, memo,
+  var result = await callGAS("saveReport", {
+    center: center, date: date, staff: staff,
     items: JSON.stringify(items),
   });
 
   if (!result) return demoSaveReport();
 
   if (result.success) {
-    return { ok: true, count: result.data.count };
+    return { ok: true, count: result.data.count, defects: result.data.defects };
   }
   return { ok: false, message: result.error };
 }
 
 function demoSaveReport() {
-  return { ok: true, count: 0, demo: true };
+  return { ok: true, count: 0, defects: 0, demo: true };
+}
+
+
+// ═══════════════════════════════════════════════════════════════
+// API: 不良画像をDriveに保存
+// ═══════════════════════════════════════════════════════════════
+
+async function gasSaveDefectImage(center, deliveryDate, productName, imageData, index) {
+  if (DEMO_MODE) return { ok: true, demo: true };
+
+  var result = await callGAS("saveDefectImage", {
+    center: center, deliveryDate: deliveryDate,
+    productName: productName, imageData: imageData, index: String(index),
+  });
+
+  if (!result) return { ok: true, demo: true };
+  if (result.success) return { ok: true, fileUrl: result.data.fileUrl };
+  return { ok: false, message: result.error };
 }
 
 
@@ -514,30 +602,25 @@ function demoSaveReport() {
 // API: PDF生成 → Drive保存
 // ═══════════════════════════════════════════════════════════════
 
-async function gasSavePdf(center, date, staff, memo, items) {
+async function gasSavePdf(center, date, staff, items) {
   if (DEMO_MODE) return demoSavePdf(center, date);
 
-  const result = await callGAS("savePdf", {
-    center, date, staff, memo,
+  var result = await callGAS("savePdf", {
+    center: center, date: date, staff: staff, memo: "",
     items: JSON.stringify(items),
   });
 
   if (!result) return demoSavePdf(center, date);
 
   if (result.success) {
-    return {
-      ok:       true,
-      fileId:   result.data.fileId,
-      fileName: result.data.fileName,
-      fileUrl:  result.data.fileUrl,
-    };
+    return { ok: true, fileId: result.data.fileId, fileName: result.data.fileName, fileUrl: result.data.fileUrl };
   }
   return { ok: false, message: result.error };
 }
 
 function demoSavePdf(center, date) {
-  const dateStr = (date || "").replace(/-/g, "");
-  const name = "【" + (center || "") + "農産】検質報告書_" + dateStr + "店着.pdf";
+  var dateStr = (date || "").replace(/-/g, "");
+  var name = "【" + (center || "") + "農産】検質報告書_" + dateStr + "店着.pdf";
   return { ok: true, fileId: "demo", fileName: name, fileUrl: "#", demo: true };
 }
 
