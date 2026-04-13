@@ -607,81 +607,56 @@ function buildPdfHtml(center, date, staff, memo, items) {
   var inspRate = totalArrival > 0 ? (Math.round(totalInsp / totalArrival * 1000) / 10) : 0;
   var totalPages = Math.ceil(parsedItems.length / 4);
 
-  var css = [
-    '*{box-sizing:border-box;margin:0;padding:0}',
-    'body{font-family:"Noto Sans JP","Hiragino Sans",sans-serif;font-size:9px;color:#333;margin:0}',
-    '.page{width:210mm;min-height:297mm;padding:12mm 15mm;position:relative;page-break-after:always}',
-    '.page:last-child{page-break-after:auto}',
-    // Title
-    '.doc-title{text-align:center;font-size:18px;font-weight:700;border:2px solid #333;padding:8px 0;margin-bottom:6px}',
-    '.doc-page{position:absolute;top:12mm;right:15mm;font-size:9px;color:#666}',
-    '.doc-to{font-size:10px;margin-bottom:2px}',
-    // Item list
-    '.item-list{font-size:8px;margin:6px 0 8px;columns:2;column-gap:12px;line-height:1.6}',
-    '.center-label{float:right;font-size:11px;font-weight:700;margin-top:-18px}',
-    // Summary bar
-    '.summary-bar{display:flex;border:1px solid #999;margin-bottom:10px}',
-    '.sb-cell{flex:1;text-align:center;padding:4px 2px;border-right:1px solid #999;font-size:8px}',
-    '.sb-cell:last-child{border-right:none}',
-    '.sb-label{font-size:7px;color:#666;margin-bottom:2px}',
-    '.sb-val{font-size:12px;font-weight:700}',
-    '.sb-warn{background:#e05565;color:#fff}',
-    '.sb-ok{background:#2ec98a;color:#fff}',
-    // Card grid
-    '.card-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}',
-    '.card{border:1px solid #ccc;border-radius:0;overflow:hidden;page-break-inside:avoid}',
-    '.card-head{padding:4px 8px;font-size:11px;font-weight:700;color:#fff}',
-    '.card-head-ok{background:#2ec98a}',
-    '.card-head-ng{background:#c0392b}',
-    '.card-body{padding:6px 8px;font-size:8px}',
-    '.card-row{display:flex;justify-content:space-between;margin-bottom:2px}',
-    '.card-label{color:#666}',
-    '.card-val{font-weight:600}',
-    '.card-reason{margin-top:2px;padding:2px 4px;background:#fff0f0;border-left:3px solid #e05565;font-size:8px}',
-    '.card-comment{margin-top:2px;font-size:8px;color:#666}',
-    '.card-photos{display:flex;gap:4px;margin-top:4px}',
-    '.card-photo{width:48%;aspect-ratio:4/3;background:#f0f0f0;border:1px solid #ddd;display:flex;align-items:center;justify-content:center;font-size:7px;color:#999}',
-    // Footer
-    '.doc-footer{position:absolute;bottom:8mm;left:15mm;right:15mm;font-size:7px;color:#999;display:flex;justify-content:space-between;border-top:1px solid #ccc;padding-top:3px}',
-  ].join('\n');
+  var html = '<!DOCTYPE html><html><head><meta charset="UTF-8">';
+  html += '<style>';
+  html += 'body{font-family:sans-serif;font-size:9px;color:#333;margin:0;padding:0}';
+  html += 'table{border-collapse:collapse}';
+  html += '.page{padding:30px 40px;page-break-after:always}';
+  html += '.page:last-child{page-break-after:auto}';
+  html += '</style></head><body>';
 
-  var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>' + css + '</style></head><body>';
-
-  // ページごとに4品目ずつ
   for (var page = 0; page < totalPages; page++) {
     var pageItems = parsedItems.slice(page * 4, (page + 1) * 4);
     html += '<div class="page">';
 
-    // ヘッダー（1ページ目のみフル表示）
-    html += '<div class="doc-page">' + (page+1) + ' / ' + totalPages + '</div>';
-    html += '<div class="doc-title">【まいばすけっと検質報告書】</div>';
+    // ── タイトル行
+    html += '<table style="width:100%;margin-bottom:4px"><tr>';
+    html += '<td style="width:80%"><div style="text-align:center;font-size:18px;font-weight:bold;border:2px solid #333;padding:6px 0">【まいばすけっと検質報告書】</div></td>';
+    html += '<td style="text-align:right;vertical-align:top;font-size:9px;color:#666">' + (page+1) + ' / ' + totalPages + '</td>';
+    html += '</tr></table>';
 
+    // ── 1ページ目のみ：宛先・品目一覧・サマリー
     if (page === 0) {
-      html += '<div class="doc-to">まいばすけっと株式会社　御中</div>';
-      html += '<div class="center-label">' + escapeHtml(center) + '農産センター</div>';
+      html += '<table style="width:100%;margin-bottom:4px"><tr>';
+      html += '<td style="font-size:10px">まいばすけっと株式会社　御中</td>';
+      html += '<td style="text-align:right;font-size:11px;font-weight:bold">' + escapeHtml(center) + '農産センター</td>';
+      html += '</tr></table>';
 
-      // 品目一覧
-      html += '<div style="font-size:8px;font-weight:600;margin:4px 0 2px">今回の検質品目</div>';
-      html += '<div class="item-list">';
+      // 品目一覧（2列テーブル）
+      html += '<div style="font-size:8px;font-weight:bold;margin:4px 0 2px">今回の検質品目</div>';
+      html += '<table style="width:100%;font-size:8px;margin-bottom:6px"><tr><td style="vertical-align:top;width:50%">';
+      var half = Math.ceil(parsedItems.length / 2);
       parsedItems.forEach(function(it, idx) {
-        html += '<div>' + (idx+1) + '. ' + escapeHtml(it.name) + '</div>';
+        if (idx === half) html += '</td><td style="vertical-align:top;width:50%">';
+        html += (idx+1) + '. ' + escapeHtml(it.name) + '<br>';
       });
-      html += '</div>';
+      html += '</td></tr></table>';
 
       // サマリーバー
-      html += '<div class="summary-bar">';
-      html += '<div class="sb-cell"><div class="sb-label">検査日</div><div class="sb-val">' + date + '</div></div>';
-      html += '<div class="sb-cell"><div class="sb-label">担当者</div><div class="sb-val">' + escapeHtml(staff) + '</div></div>';
-      html += '<div class="sb-cell ' + (hasDefect ? 'sb-warn' : 'sb-ok') + '"><div class="sb-label">検質判定</div><div class="sb-val">' + (hasDefect ? '有' : '無') + '</div></div>';
-      html += '<div class="sb-cell"><div class="sb-label">検質数</div><div class="sb-val">' + totalInsp + ' ps</div></div>';
-      html += '<div class="sb-cell"><div class="sb-label">入荷数合計</div><div class="sb-val">' + totalArrival + ' ps</div></div>';
-      html += '<div class="sb-cell"><div class="sb-label">検質率</div><div class="sb-val">' + inspRate + '%</div></div>';
-      html += '</div>';
+      html += '<table style="width:100%;border:1px solid #999;margin-bottom:8px"><tr>';
+      html += '<td style="text-align:center;padding:3px;border-right:1px solid #999;width:16%"><div style="font-size:7px;color:#666">検査日</div><div style="font-size:11px;font-weight:bold">' + date + '</div></td>';
+      html += '<td style="text-align:center;padding:3px;border-right:1px solid #999;width:16%"><div style="font-size:7px;color:#666">担当者</div><div style="font-size:11px;font-weight:bold">' + escapeHtml(staff) + '</div></td>';
+      html += '<td style="text-align:center;padding:3px;border-right:1px solid #999;width:12%;background:' + (hasDefect ? '#c0392b' : '#2ec98a') + ';color:#fff"><div style="font-size:7px">検質判定</div><div style="font-size:14px;font-weight:bold">' + (hasDefect ? '有' : '無') + '</div></td>';
+      html += '<td style="text-align:center;padding:3px;border-right:1px solid #999;width:18%"><div style="font-size:7px;color:#666">検質数</div><div style="font-size:11px;font-weight:bold">' + totalInsp + ' ps</div></td>';
+      html += '<td style="text-align:center;padding:3px;border-right:1px solid #999;width:20%"><div style="font-size:7px;color:#666">入荷数合計</div><div style="font-size:11px;font-weight:bold">' + totalArrival + ' ps</div></td>';
+      html += '<td style="text-align:center;padding:3px;width:18%"><div style="font-size:7px;color:#666">検質率</div><div style="font-size:11px;font-weight:bold">' + inspRate + '%</div></td>';
+      html += '</tr></table>';
     }
 
-    // カードグリッド（2x2）
-    html += '<div class="card-grid">';
-    pageItems.forEach(function(item) {
+    // ── 品目カード 2x2
+    html += '<table style="width:100%" cellspacing="6"><tr>';
+    pageItems.forEach(function(item, ci) {
+      if (ci === 2) html += '</tr><tr>';
       var dq = Number(item.defectQty) || 0;
       var iq = Number(item.inspQty) || 0;
       var aq = Number(item.arrivalQty) || 0;
@@ -689,45 +664,56 @@ function buildPdfHtml(center, date, staff, memo, items) {
       var isNG = dq > 0;
       var reason = item.defectReason || '';
       if (reason === 'その他（手入力）' && item.defectReasonText) reason = 'その他: ' + item.defectReasonText;
+      var headBg = isNG ? '#c0392b' : '#2ec98a';
 
-      html += '<div class="card">';
-      html += '<div class="card-head ' + (isNG ? 'card-head-ng' : 'card-head-ok') + '">';
+      html += '<td style="width:50%;vertical-align:top;border:1px solid #ccc;padding:0">';
+      // カードヘッダー
+      html += '<div style="background:' + headBg + ';color:#fff;padding:4px 8px;font-size:11px;font-weight:bold">';
       html += escapeHtml(item.name);
       if (isNG) html += '　<span style="font-size:8px">⚠ 不良あり</span>';
       html += '</div>';
-      html += '<div class="card-body">';
-      html += '<div class="card-row"><span class="card-label">仕入先</span><span class="card-val">' + escapeHtml(item.supplier) + '</span></div>';
-      html += '<div class="card-row"><span class="card-label">産地</span><span class="card-val">' + escapeHtml(item.origin) + '</span></div>';
-      html += '<div class="card-row"><span class="card-label">入荷数</span><span class="card-val">' + aq + ' ps</span></div>';
-      html += '<div class="card-row"><span class="card-label">検質数</span><span class="card-val">' + iq + ' ps</span></div>';
-      html += '<div class="card-row"><span class="card-label">不良数</span><span class="card-val" style="color:' + (isNG ? '#e05565' : '#333') + '">' + dq + ' ps</span></div>';
-      html += '<div class="card-row"><span class="card-label">不良率</span><span class="card-val">' + rate + '%</span></div>';
+      // カードボディ
+      html += '<div style="padding:6px 8px;font-size:8px">';
+      html += '<table style="width:100%;font-size:8px">';
+      html += '<tr><td style="color:#666;width:40%">仕入先</td><td style="font-weight:bold">' + escapeHtml(item.supplier) + '</td><td style="color:#666;width:15%">産地</td><td style="font-weight:bold">' + escapeHtml(item.origin) + '</td></tr>';
+      html += '<tr><td style="color:#666">入荷数</td><td style="font-weight:bold">' + aq + ' ps</td><td style="color:#666">検質数</td><td style="font-weight:bold">' + iq + ' ps</td></tr>';
+      html += '<tr><td style="color:#666">不良数</td><td style="font-weight:bold;color:' + (isNG ? '#c0392b' : '#333') + '">' + dq + ' ps</td><td style="color:#666">不良率</td><td style="font-weight:bold">' + rate + '%</td></tr>';
+      html += '</table>';
 
       if (isNG && reason) {
-        html += '<div class="card-reason">不良理由: ' + escapeHtml(reason) + '</div>';
+        html += '<div style="margin-top:3px;padding:2px 5px;background:#fff0f0;border-left:3px solid #c0392b;font-size:8px"><b>不良理由:</b> ' + escapeHtml(reason) + '</div>';
       }
-      html += '<div class="card-comment">コメント: ' + escapeHtml(item.comment || '特に問題無し') + '</div>';
+      html += '<div style="margin-top:2px;font-size:8px;color:#666">コメント: ' + escapeHtml(item.comment || '特に問題無し') + '</div>';
 
-      // 写真プレースホルダー
-      html += '<div class="card-photos">';
-      html += '<div class="card-photo">検質1</div>';
-      html += '<div class="card-photo">検質2</div>';
-      html += '</div>';
+      // 検質画像プレースホルダー
+      html += '<table style="width:100%;margin-top:4px"><tr>';
+      html += '<td style="width:48%;height:60px;background:#f0f0f0;border:1px solid #ddd;text-align:center;vertical-align:middle;font-size:7px;color:#999">検質1</td>';
+      html += '<td style="width:4%"></td>';
+      html += '<td style="width:48%;height:60px;background:#f0f0f0;border:1px solid #ddd;text-align:center;vertical-align:middle;font-size:7px;color:#999">検質2</td>';
+      html += '</tr></table>';
+
+      // 不良画像プレースホルダー
       if (isNG) {
-        html += '<div class="card-photos">';
-        html += '<div class="card-photo" style="border-color:#e05565">不良1</div>';
-        html += '<div class="card-photo" style="border-color:#e05565">不良2</div>';
-        html += '</div>';
+        html += '<table style="width:100%;margin-top:3px"><tr>';
+        html += '<td style="width:48%;height:60px;background:#fff0f0;border:1px solid #c0392b;text-align:center;vertical-align:middle;font-size:7px;color:#c0392b">不良1</td>';
+        html += '<td style="width:4%"></td>';
+        html += '<td style="width:48%;height:60px;background:#fff0f0;border:1px solid #c0392b;text-align:center;vertical-align:middle;font-size:7px;color:#c0392b">不良2</td>';
+        html += '</tr></table>';
       }
 
-      html += '</div></div>'; // card-body, card
+      html += '</div></td>'; // card body, td
     });
-    html += '</div>'; // card-grid
+    // 4品未満の場合空セルで埋める
+    var remaining = 4 - pageItems.length;
+    if (remaining > 0 && pageItems.length <= 2) {
+      for (var e = 0; e < (2 - pageItems.length); e++) html += '<td style="width:50%"></td>';
+    }
+    if (pageItems.length <= 2) html += '</tr><tr><td style="width:50%"></td><td style="width:50%"></td>';
+    html += '</tr></table>';
 
     // フッター
-    html += '<div class="doc-footer">';
-    html += '<span>' + escapeHtml(center) + '農産センター</span>';
-    html += '<span>' + (page+1) + ' / ' + totalPages + '</span>';
+    html += '<div style="position:absolute;bottom:20px;left:40px;right:40px;font-size:7px;color:#999;border-top:1px solid #ccc;padding-top:3px">';
+    html += '<table style="width:100%"><tr><td>' + escapeHtml(center) + '農産センター</td><td style="text-align:right">' + (page+1) + ' / ' + totalPages + '</td></tr></table>';
     html += '</div>';
 
     html += '</div>'; // page
