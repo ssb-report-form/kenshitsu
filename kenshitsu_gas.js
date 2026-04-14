@@ -127,6 +127,14 @@ function doGet(e) {
     case "listFiles":
       result = handleListFiles({ center: center });
       break;
+    case "saveReport":
+      var reportItems = e.parameter.items ? JSON.parse(e.parameter.items) : [];
+      result = handleSaveReport({ center: center, date: e.parameter.date || "", staff: e.parameter.staff || "", items: reportItems });
+      break;
+    case "savePdf":
+      var pdfItems = e.parameter.items ? JSON.parse(e.parameter.items) : [];
+      result = handleSavePdf({ center: center, date: e.parameter.date || "", staff: e.parameter.staff || "", memo: "", items: pdfItems });
+      break;
     case "ping":
       result = ok({ status: "alive", timestamp: new Date().toISOString() });
       break;
