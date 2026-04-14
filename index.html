@@ -543,8 +543,10 @@ textarea.form-input{resize:vertical;min-height:80px}
 
   <div class="btn-row mt-12">
     <button class="btn btn-outline" onclick="goStep(3)">← 修正する</button>
-    <button class="btn btn-gold" onclick="printPdf()">🖨 印刷・PDF出力</button>
-    <button class="btn btn-green" onclick="savePdf()">💾 データ保存</button>
+    <button class="btn btn-gold" onclick="savePdf()" style="flex:2">📤 PDF保存・提出</button>
+  </div>
+  <div style="text-align:right;margin-top:8px">
+    <button class="btn btn-outline" onclick="printPdf()" style="font-size:11px;padding:6px 12px;opacity:.7">🖨 印刷</button>
   </div>
 </div>
 
@@ -575,7 +577,17 @@ textarea.form-input{resize:vertical;min-height:80px}
   <div class="modal-sheet">
     <div class="modal-handle"></div>
     <div class="modal-title" id="modalTitle">品目名</div>
-    <div class="modal-sub" id="modalSub">産地 / 取引先</div>
+    <div class="modal-sub" id="modalSub">取引先</div>
+
+    <!-- 産地入力 -->
+    <div class="sec-h">産地</div>
+    <div class="card">
+      <div class="form-group" style="margin-bottom:4px">
+        <label class="form-label">産地 <span style="color:var(--red);font-size:8px">入力</span></label>
+        <input type="text" class="form-input" id="modalOrigin" placeholder="産地を入力">
+      </div>
+      <div id="originHint" style="font-size:10px;color:var(--tx2);padding:0 2px 4px">参考産地: --</div>
+    </div>
 
     <!-- 数量入力 -->
     <div class="sec-h">数量入力</div>
@@ -980,7 +992,7 @@ async function doImport() {
 function applyImportData(result) {
   state.items = (result.items || []).map(function(it, i) {
     return {
-      name:it.name, origin:it.origin, supplier:it.supplier,
+      name:it.name, origin:'', originRef:it.origin||'', supplier:it.supplier,
       code:it.code||'', unit:it.unit||'',
       arrivalQty:0, inspQty:0, defectQty:0, defectRate:0,
       defectReason:'', defectReasonText:'', comment:'',
@@ -1038,7 +1050,7 @@ function renderItems() {
       + '<div class="item-num">'+(i+1)+'</div>'
       + '<div class="item-body">'
       + '<div class="item-name">'+it.name+'</div>'
-      + '<div class="item-meta">'+it.origin+' / '+it.supplier+'</div>'
+      + '<div class="item-meta">'+(it.origin || '<span style="color:var(--amb)">産地未入力</span>')+' / '+it.supplier+'</div>'
       + '</div>'
       + badge
       + '</div>';
@@ -1057,7 +1069,11 @@ function openInspection(idx) {
   state.currentItem = idx;
   var it = state.items[idx];
   document.getElementById('modalTitle').textContent = (idx+1) + '. ' + it.name;
-  document.getElementById('modalSub').textContent = it.origin + ' / ' + it.supplier;
+  document.getElementById('modalSub').textContent = it.supplier || '';
+
+  // 産地
+  document.getElementById('modalOrigin').value = it.origin || '';
+  document.getElementById('originHint').textContent = '参考産地: ' + (it.originRef || it.originRaw || '--');
 
   // 数量
   document.getElementById('modalArrival').value = it.arrivalQty || '';
@@ -1159,6 +1175,7 @@ function saveInspection() {
   }
 
   // 保存
+  it.origin = document.getElementById('modalOrigin').value.trim();
   it.arrivalQty = arrival;
   it.inspQty = inspQty;
   it.unit = document.getElementById('modalUnit').value;
@@ -1335,33 +1352,60 @@ function buildPdfPreview(pass, fail, defects) {
 }
 
 async function savePdf() {
-  showLoading('PDF生成中...');
+  showLoading('提出中... (1/3) スプレッドシート保存');
 
   var date = document.getElementById('inspDate').value;
   var staff = document.getElementById('staffSelect').value || '';
+  var steps = 3;
+  var done = 0;
 
-  // 1) 検査結果をスプレッドシートに保存（GAS連携時）
-  if (typeof gasSaveReport === 'function') {
-    await gasSaveReport(state.center, date, staff, state.items);
-  }
+  // 1) 検査結果をスプレッドシートに転記
+  try {
+    if (typeof gasSaveReport === 'function') {
+      await gasSaveReport(state.center, date, staff, state.items);
+    }
+    done++;
+    showLoading('提出中... (2/' + steps + ') 不良画像保存');
+  } catch(e) { console.warn('saveReport error:', e); }
 
-  // 2) 不良画像をDriveに保存（GAS連携時）
-  if (typeof gasSaveDefectImage === 'function') {
-    var deliveryDate = calcDeliveryDate(date);
-    for (var i = 0; i < state.items.length; i++) {
-      var it = state.items[i];
-      if (it.defectPhotos) {
-        for (var j = 0; j < it.defectPhotos.length; j++) {
-          if (it.defectPhotos[j]) {
-            await gasSaveDefectImage(state.center, deliveryDate, it.name, it.defectPhotos[j], j+1);
+  // 2) 不良画像をDriveフォルダに格納
+  try {
+    if (typeof gasSaveDefectImage === 'function') {
+      var deliveryDate = calcDeliveryDate(date);
+      for (var i = 0; i < state.items.length; i++) {
+        var it = state.items[i];
+        if (it.defectPhotos) {
+          for (var j = 0; j < it.defectPhotos.length; j++) {
+            if (it.defectPhotos[j]) {
+              await gasSaveDefectImage(state.center, deliveryDate, it.name, it.defectPhotos[j], j+1);
+            }
           }
         }
       }
     }
-  }
+    done++;
+    showLoading('提出中... (3/' + steps + ') PDF保存');
+  } catch(e) { console.warn('saveDefectImage error:', e); }
+
+  // 3) PDFをDriveに保存（印刷画面は開かない）
+  try {
+    if (typeof generatePdfHtml === 'function' && typeof savePdfToDrive === 'function') {
+      var pdfHtml = generatePdfHtml(state.center, date, staff, '', state.items);
+      var delivDate = new Date(new Date(date).getTime() + 86400000);
+      var dateStr = delivDate.toISOString().slice(0,10).replace(/-/g, '');
+      var fileName = '【' + state.center + '農産】まいばすけっと検質報告書_' + dateStr + '店着';
+      savePdfToDrive(state.center, fileName, pdfHtml);
+    }
+    done++;
+  } catch(e) { console.warn('savePdf error:', e); }
 
   hideLoading();
-  toast('データを保存しました','success');
+
+  if (done >= steps) {
+    toast('提出完了！（スプレッドシート・画像・PDF）','success');
+  } else {
+    toast('一部保存に失敗しました（' + done + '/' + steps + '）','error');
+  }
 
   // 途中保存データをクリア
   if (typeof clearProgress === 'function') clearProgress(state.center, date);
