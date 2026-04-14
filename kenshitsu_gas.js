@@ -672,32 +672,40 @@ function buildPdfHtml(center, date, staff, memo, items) {
       html += escapeHtml(item.name);
       if (isNG) html += '　<span style="font-size:8px">⚠ 不良あり</span>';
       html += '</div>';
-      // カードボディ
+      // カードボディ（ラベル上・値下の2列レイアウト）
       html += '<div style="padding:6px 8px;font-size:8px">';
-      html += '<table style="width:100%;font-size:8px">';
-      html += '<tr><td style="color:#666;width:40%">仕入先</td><td style="font-weight:bold">' + escapeHtml(item.supplier) + '</td><td style="color:#666;width:15%">産地</td><td style="font-weight:bold">' + escapeHtml(item.origin) + '</td></tr>';
-      html += '<tr><td style="color:#666">入荷数</td><td style="font-weight:bold">' + aq + ' ps</td><td style="color:#666">検質数</td><td style="font-weight:bold">' + iq + ' ps</td></tr>';
-      html += '<tr><td style="color:#666">不良数</td><td style="font-weight:bold;color:' + (isNG ? '#c0392b' : '#333') + '">' + dq + ' ps</td><td style="color:#666">不良率</td><td style="font-weight:bold">' + rate + '%</td></tr>';
+      html += '<table style="width:100%;font-size:8px;border-collapse:collapse">';
+      // 仕入先 / 産地
+      html += '<tr><td style="color:#888;font-size:7px;padding:1px 0 0">仕入先</td><td style="color:#888;font-size:7px;padding:1px 0 0">産地</td></tr>';
+      html += '<tr><td style="font-weight:bold;padding:0 0 3px;font-size:9px">' + escapeHtml(item.supplier) + '</td><td style="font-weight:bold;padding:0 0 3px;font-size:9px">' + escapeHtml(item.origin) + '</td></tr>';
+      // 入荷数 / 検質数
+      html += '<tr><td style="color:#888;font-size:7px;padding:1px 0 0">入荷数</td><td style="color:#888;font-size:7px;padding:1px 0 0">検質数</td></tr>';
+      html += '<tr><td style="font-weight:bold;padding:0 0 3px;font-size:9px">' + aq + ' ps</td><td style="font-weight:bold;padding:0 0 3px;font-size:9px">' + iq + ' ps</td></tr>';
+      // 不良数 / 不良率
+      html += '<tr><td style="color:#888;font-size:7px;padding:1px 0 0">不良数</td><td style="color:#888;font-size:7px;padding:1px 0 0">不良率</td></tr>';
+      html += '<tr><td style="font-weight:bold;padding:0 0 3px;font-size:9px;color:' + (isNG ? '#c0392b' : '#333') + '">' + dq + ' ps</td><td style="font-weight:bold;padding:0 0 3px;font-size:9px">' + rate + '%</td></tr>';
       html += '</table>';
 
       if (isNG && reason) {
-        html += '<div style="margin-top:3px;padding:2px 5px;background:#fff0f0;border-left:3px solid #c0392b;font-size:8px"><b>不良理由:</b> ' + escapeHtml(reason) + '</div>';
+        html += '<div style="margin-top:2px;padding:2px 5px;background:#fff0f0;border-left:3px solid #c0392b;font-size:8px;font-weight:bold">不良理由: ' + escapeHtml(reason) + '</div>';
       }
-      html += '<div style="margin-top:2px;font-size:8px;color:#666">コメント: ' + escapeHtml(item.comment || '特に問題無し') + '</div>';
+      html += '<div style="margin-top:2px;font-size:8px;color:#555">コメント: ' + escapeHtml(item.comment || '特に問題無し') + '</div>';
 
-      // 検質画像プレースホルダー
+      // 検質画像
+      var ip = item.inspPhotos || [];
       html += '<table style="width:100%;margin-top:4px"><tr>';
-      html += '<td style="width:48%;height:60px;background:#f0f0f0;border:1px solid #ddd;text-align:center;vertical-align:middle;font-size:7px;color:#999">検質1</td>';
+      html += buildPhotoCell(ip[0], '検質1', '#ddd', '#f0f0f0');
       html += '<td style="width:4%"></td>';
-      html += '<td style="width:48%;height:60px;background:#f0f0f0;border:1px solid #ddd;text-align:center;vertical-align:middle;font-size:7px;color:#999">検質2</td>';
+      html += buildPhotoCell(ip[1], '検質2', '#ddd', '#f0f0f0');
       html += '</tr></table>';
 
-      // 不良画像プレースホルダー
+      // 不良画像
       if (isNG) {
+        var dp = item.defectPhotos || [];
         html += '<table style="width:100%;margin-top:3px"><tr>';
-        html += '<td style="width:48%;height:60px;background:#fff0f0;border:1px solid #c0392b;text-align:center;vertical-align:middle;font-size:7px;color:#c0392b">不良1</td>';
+        html += buildPhotoCell(dp[0], '不良1', '#c0392b', '#fff0f0');
         html += '<td style="width:4%"></td>';
-        html += '<td style="width:48%;height:60px;background:#fff0f0;border:1px solid #c0392b;text-align:center;vertical-align:middle;font-size:7px;color:#c0392b">不良2</td>';
+        html += buildPhotoCell(dp[1], '不良2', '#c0392b', '#fff0f0');
         html += '</tr></table>';
       }
 
@@ -815,6 +823,17 @@ function matchSupplierName(rawName, master) {
   }
 
   return bestMatch || rawName;
+}
+
+// 写真セル生成（base64があれば画像表示、なければプレースホルダー）
+function buildPhotoCell(dataUrl, label, borderColor, bgColor) {
+  if (dataUrl && dataUrl.indexOf('data:') === 0) {
+    return '<td style="width:48%;height:100px;border:1px solid ' + borderColor + ';padding:2px;text-align:center;vertical-align:middle">'
+      + '<img src="' + dataUrl + '" style="max-width:100%;max-height:96px;object-fit:contain">'
+      + '</td>';
+  }
+  return '<td style="width:48%;height:100px;background:' + bgColor + ';border:1px solid ' + borderColor + ';text-align:center;vertical-align:middle;font-size:7px;color:#999">'
+    + label + '</td>';
 }
 
 function getOrCreateSheet(ss, name, headers) {
