@@ -605,9 +605,38 @@ async function gasSaveDefectImage(center, deliveryDate, productName, imageData, 
 async function gasSavePdf(center, date, staff, items) {
   if (DEMO_MODE) return demoSavePdf(center, date);
 
-  var result = await callGAS("savePdf", {
+  // 画像データ含めてPOSTで送信（GETだとURLサイズ制限）
+  var payload = {
+    action: "savePdf",
     center: center, date: date, staff: staff, memo: "",
     items: JSON.stringify(items),
+  };
+  try {
+    var resp = await fetch(GAS_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify(payload),
+      redirect: "follow",
+    });
+    if (resp.ok) {
+      var json = await resp.json();
+      if (json.success) {
+        return { ok: true, fileId: json.data.fileId, fileName: json.data.fileName, fileUrl: json.data.fileUrl };
+      }
+      return { ok: false, message: json.error };
+    }
+  } catch(e) {
+    console.log("POST savePdf failed:", e.message);
+  }
+
+  // フォールバック: JSONP（画像なし）
+  var result = await callGAS("savePdf", {
+    center: center, date: date, staff: staff, memo: "",
+    items: JSON.stringify(items.map(function(it) {
+      var copy = {}; for (var k in it) copy[k] = it[k];
+      delete copy.inspPhotos; delete copy.defectPhotos;
+      return copy;
+    })),
   });
 
   if (!result) return demoSavePdf(center, date);

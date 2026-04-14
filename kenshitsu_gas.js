@@ -608,142 +608,217 @@ function buildPdfHtml(center, date, staff, memo, items) {
   var totalPages = Math.ceil(parsedItems.length / 4);
   if (totalPages < 1) totalPages = 1;
 
-  var html = '<!DOCTYPE html><html><head><meta charset="UTF-8">';
-  html += '<style>';
-  html += 'body{font-family:sans-serif;font-size:9px;color:#333;margin:0;padding:0}';
-  html += 'table{border-collapse:collapse}';
-  html += '.page{width:210mm;padding:10mm 12mm;page-break-after:always;position:relative}';
-  html += '.page:last-child{page-break-after:auto}';
-  html += '</style></head><body>';
+  var TEL = {"大田":"03-5735-5107","市川":"047-395-7681","浮島":"044-276-1880"};
+  var FAX = {"大田":"03-5735-5108","市川":"047-395-7682","浮島":"044-276-1881"};
+  var tel = TEL[center] || "";
+  var fax = FAX[center] || "";
+
+  // 品目一覧HTML（4列×4行）
+  var itemListHtml = '<table style="width:100%;font-size:9px">';
+  for (var row = 0; row < 4; row++) {
+    itemListHtml += '<tr>';
+    for (var col = 0; col < 4; col++) {
+      var idx = col * 4 + row;
+      itemListHtml += '<td style="padding:1px 3px;width:25%">';
+      if (idx < parsedItems.length) itemListHtml += (idx+1) + '.' + escapeHtml(parsedItems[idx].name);
+      itemListHtml += '</td>';
+    }
+    itemListHtml += '</tr>';
+  }
+  itemListHtml += '</table>';
+
+  var css = '*{box-sizing:border-box;margin:0;padding:0}' +
+    'body{font-family:sans-serif;font-size:9px;color:#333}' +
+    'table{border-collapse:collapse}' +
+    '.page{width:210mm;height:297mm;padding:8mm 10mm 10mm;position:relative;page-break-after:always;overflow:hidden}' +
+    '.page:last-child{page-break-after:auto}' +
+    '@media print{@page{size:A4 portrait;margin:0}.page{page-break-after:always;height:297mm}}';
+
+  var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>' + css + '</style></head><body>';
 
   for (var page = 0; page < totalPages; page++) {
     var pageItems = parsedItems.slice(page * 4, (page + 1) * 4);
+
+    // ページ内に不良があるかで抜取有無を判定
+    var pageHasDefect = pageItems.some(function(it) { return Number(it.defectQty) > 0; });
+    var samplingVal = pageHasDefect ? "有" : "無";
+    var samplingBg = pageHasDefect ? "background:#ffff00;" : "";
+
     html += '<div class="page">';
 
-    // ═══ タイトル（中央） ═══
-    html += '<div style="text-align:center;font-size:20px;font-weight:bold;margin-bottom:6px">【まいばすけっと検質報告書】</div>';
+    // ── ページ番号
+    html += '<div style="position:absolute;top:8mm;right:10mm;font-size:10px">' + (page+1) + '/' + totalPages + '</div>';
 
-    if (page === 0) {
-      // ═══ 宛先 ═══
-      html += '<div style="font-size:10px;margin-bottom:6px">まいばすけっと株式会社　御中</div>';
+    // ── タイトル
+    html += '<div style="text-align:center;font-size:17px;font-weight:bold;letter-spacing:2px;margin-bottom:3mm">【まいばすけっと検質報告書】</div>';
 
-      // ═══ 品目一覧 + センター名（枠線付き） ═══
-      html += '<table style="width:100%;border:1px solid #333;margin-bottom:6px"><tr>';
-      html += '<td style="padding:6px 8px;vertical-align:top;width:80%">';
-      html += '<div style="font-size:8px;font-weight:bold;margin-bottom:3px">今週の検質品目</div>';
-      // 4列×4行のテーブル
-      html += '<table style="width:100%;font-size:8px">';
-      for (var row = 0; row < 4; row++) {
-        html += '<tr>';
-        for (var col = 0; col < 4; col++) {
-          var idx = col * 4 + row;
-          html += '<td style="padding:1px 4px;width:25%">';
-          if (idx < parsedItems.length) html += (idx+1) + '.' + escapeHtml(parsedItems[idx].name);
-          html += '</td>';
-        }
-        html += '</tr>';
-      }
-      html += '</table>';
-      html += '</td>';
-      html += '<td style="border-left:1px solid #333;padding:6px 10px;vertical-align:middle;text-align:center;font-size:12px;font-weight:bold;width:20%">';
-      html += escapeHtml(center) + '農産センター';
-      html += '</td></tr></table>';
+    // ── 宛先
+    html += '<div style="font-size:11px;font-weight:bold;margin-bottom:3mm">まいばすけっと株式会社　御中</div>';
 
-      // ═══ サマリーバー（枠線付き） ═══
-      html += '<table style="width:100%;border:1px solid #333;margin-bottom:8px"><tr>';
-      var sbStyle = 'text-align:center;padding:4px 2px;border-right:1px solid #333';
-      html += '<td style="' + sbStyle + ';width:18%"><div style="font-size:7px;color:#666">検質日</div><div style="font-size:12px;font-weight:bold">' + date + '</div></td>';
-      html += '<td style="' + sbStyle + ';width:14%"><div style="font-size:7px;color:#666">担当者名</div><div style="font-size:12px;font-weight:bold">' + escapeHtml(staff) + '</div></td>';
-      html += '<td style="' + sbStyle + ';width:12%;background:' + (hasDefect ? '#c0392b' : '#27ae60') + ';color:#fff"><div style="font-size:7px">抜取有無</div><div style="font-size:14px;font-weight:bold">' + (hasDefect ? '有' : '無') + '</div></td>';
-      html += '<td style="' + sbStyle + ';width:18%"><div style="font-size:7px;color:#666">検質数計</div><div style="font-size:12px;font-weight:bold">' + totalInsp + ' ps</div></td>';
-      html += '<td style="' + sbStyle + ';width:18%"><div style="font-size:7px;color:#666">対象数計</div><div style="font-size:12px;font-weight:bold">' + totalArrival + ' ps</div></td>';
-      html += '<td style="text-align:center;padding:4px 2px;width:14%"><div style="font-size:7px;color:#666">検質率</div><div style="font-size:12px;font-weight:bold">' + inspRate + '%</div></td>';
-      html += '</tr></table>';
-    }
+    // ── 品目一覧 + センター名
+    html += '<table style="width:100%;border:1px solid #999;margin-bottom:3mm"><tr>';
+    html += '<td style="padding:2mm 3mm;border-right:1px solid #999;vertical-align:top">';
+    html += '<div style="font-size:9px;font-weight:bold;margin-bottom:1.5mm">今週の検質品目</div>';
+    html += itemListHtml;
+    html += '</td>';
+    html += '<td style="padding:2mm 3mm;width:38mm;vertical-align:middle;text-align:center">';
+    html += '<div style="font-weight:bold;font-size:11px">' + escapeHtml(center) + '農産センター</div>';
+    html += '</td></tr></table>';
 
-    // ═══ 品目カード 2列×2行 ═══
+    // ── サマリーバー
+    html += '<table style="width:100%;border:1px solid #999;margin-bottom:4mm"><tr>';
+    html += '<td style="padding:1.5mm 3mm;border-right:1px solid #999;width:17%"><div style="font-size:8px;color:#666">検質日</div><div style="font-weight:bold;font-size:13px">' + date + '</div></td>';
+    html += '<td style="padding:1.5mm 3mm;border-right:1px solid #999;width:15%"><div style="font-size:8px;color:#666">報告者</div><div style="font-weight:bold;font-size:13px">' + escapeHtml(staff) + '</div></td>';
+    html += '<td style="padding:2.5mm 4mm;border-right:1px solid #999;text-align:center;width:11%;' + samplingBg + '"><div style="font-size:8px;color:#555">抜取有無</div><div style="font-weight:bold;font-size:13px">' + samplingVal + '</div></td>';
+    html += '<td style="padding:2.5mm 4mm;border-right:1px solid #999;text-align:center;width:17%"><div style="font-size:8px;color:#666">検質数計</div><div style="font-weight:bold;font-size:11px">' + totalInsp + ' ps</div></td>';
+    html += '<td style="padding:2.5mm 4mm;border-right:1px solid #999;text-align:center;width:17%"><div style="font-size:8px;color:#666">対象数計</div><div style="font-weight:bold;font-size:11px">' + totalArrival + ' ps</div></td>';
+    html += '<td style="padding:2.5mm 4mm;text-align:center;width:14%"><div style="font-size:8px;color:#666">検質率</div><div style="font-weight:bold;font-size:11px">' + inspRate + '%</div></td>';
+    html += '</tr></table>';
+
+    // ── 品目カード 2×2
     html += '<table style="width:100%" cellspacing="4"><tr>';
-    pageItems.forEach(function(item, ci) {
+    for (var ci = 0; ci < 4; ci++) {
       if (ci === 2) html += '</tr><tr>';
+      if (ci >= pageItems.length) {
+        html += '<td style="width:50%"></td>';
+        continue;
+      }
+      var item = pageItems[ci];
       var dq = Number(item.defectQty) || 0;
       var iq = Number(item.inspQty) || 0;
       var aq = Number(item.arrivalQty) || 0;
       var rate = iq > 0 ? (Math.round(dq / iq * 1000) / 10) : 0;
       var isNG = dq > 0;
-      var reason = item.defectReason || '';
-      if (reason === 'その他（手入力）' && item.defectReasonText) reason = 'その他: ' + item.defectReasonText;
+      var reason = item.defectReason || "";
+      if (reason === "その他（手入力）" && item.defectReasonText) reason = "その他: " + item.defectReasonText;
+      var hBg = isNG ? "#c0392b" : "#1a5c2e";
 
-      html += '<td style="width:50%;vertical-align:top;border:1px solid #999;padding:0">';
+      html += '<td style="width:50%;vertical-align:top;border:1.5px solid ' + hBg + ';padding:0">';
 
-      // ── カードヘッダー（商品名を大きく）
-      var hBg = isNG ? '#c0392b' : '#27ae60';
-      html += '<div style="background:' + hBg + ';color:#fff;padding:5px 8px;font-size:13px;font-weight:bold">';
+      // ヘッダー（商品名大きく）
+      html += '<div style="background:' + hBg + ';color:#fff;padding:1.5mm 3mm;font-size:10px;font-weight:bold">';
       html += escapeHtml(item.name);
-      if (isNG) html += '　<span style="font-size:9px">⚠ 不良あり</span>';
+      if (isNG) html += '　<span style="font-size:8px">⚠ 不良あり</span>';
       html += '</div>';
 
-      // ── カードボディ
-      html += '<div style="padding:5px 8px">';
+      // ボディ
+      html += '<div style="padding:1.5mm 3mm;font-size:9px">';
 
-      // 仕入先・産地
-      html += '<table style="width:100%;font-size:8px;margin-bottom:2px"><tr>';
-      html += '<td style="width:50%"><span style="color:#888;font-size:7px">仕入先</span><br><b style="font-size:9px">' + escapeHtml(item.supplier) + '</b></td>';
-      html += '<td style="width:50%"><span style="color:#888;font-size:7px">産地</span><br><b style="font-size:9px">' + escapeHtml(item.origin) + '</b></td>';
+      // 仕入先(取引先名) / 産地
+      html += '<table style="width:100%;margin-bottom:1.5mm"><tr>';
+      html += '<td style="width:50%"><span style="color:#666;font-size:8px">仕入先</span><br><b>' + escapeHtml(item.supplier) + '</b></td>';
+      html += '<td style="width:50%"><span style="color:#666;font-size:8px">産地</span><br><b>' + escapeHtml(item.origin) + '</b></td>';
       html += '</tr></table>';
 
-      // 入荷数・検質数
-      html += '<table style="width:100%;font-size:8px;margin-bottom:2px"><tr>';
-      html += '<td style="width:50%"><span style="color:#888;font-size:7px">入荷数</span><br><b style="font-size:9px">' + aq + ' ps</b></td>';
-      html += '<td style="width:50%"><span style="color:#888;font-size:7px">検質数</span><br><b style="font-size:9px">' + iq + ' ps</b></td>';
+      // 入荷数 / 検質数
+      html += '<table style="width:100%;margin-bottom:1.5mm"><tr>';
+      html += '<td style="width:50%"><span style="color:#666;font-size:8px">入荷数</span><br><b>' + aq + ' ps</b></td>';
+      html += '<td style="width:50%"><span style="color:#666;font-size:8px">検質数</span><br><b>' + iq + ' ps</b></td>';
       html += '</tr></table>';
 
-      // 不良数・不良率
-      html += '<table style="width:100%;font-size:8px;margin-bottom:2px"><tr>';
-      html += '<td style="width:50%"><span style="color:#888;font-size:7px">不良数</span><br><b style="font-size:9px;color:' + (isNG ? '#c0392b' : '#333') + '">' + dq + ' ps</b></td>';
-      html += '<td style="width:50%"><span style="color:#888;font-size:7px">不良率</span><br><b style="font-size:9px">' + rate + '%</b></td>';
+      // 不良数 / 不良率
+      html += '<table style="width:100%;margin-bottom:1.5mm"><tr>';
+      html += '<td style="width:50%"><span style="color:#666;font-size:8px">不良数</span><br><b style="color:' + (isNG ? '#c0392b' : '#333') + '">' + dq + ' ps</b></td>';
+      html += '<td style="width:50%"><span style="color:#666;font-size:8px">不良率</span><br><b style="color:' + (isNG ? '#c0392b' : '#333') + '">' + rate + '%</b></td>';
       html += '</tr></table>';
 
-      // 不良理由（あれば）
+      // 不良理由
       if (isNG && reason) {
-        html += '<div style="padding:2px 5px;background:#fff0f0;border-left:3px solid #c0392b;font-size:8px;margin-bottom:2px"><b>不良理由:</b> ' + escapeHtml(reason) + '</div>';
+        html += '<div style="padding:1mm 2mm;background:#fff5f5;border-radius:2px;border-left:3px solid #c0392b;font-size:8px;margin-bottom:1.5mm"><b>不良理由:</b> ' + escapeHtml(reason) + '</div>';
       }
 
       // コメント
-      html += '<div style="font-size:8px;color:#555;margin-bottom:4px">コメント: ' + escapeHtml(item.comment || '特に問題無し') + '</div>';
+      html += '<div style="font-size:8px;color:#555;margin-bottom:2mm;' + (isNG ? 'background:#fff5f5;padding:1mm 2mm;border-radius:2px' : '') + '">コメント: ' + escapeHtml(item.comment || '特に問題無し') + '</div>';
 
-      // ── 検質画像（大きく横並び2枚）
+      // 検質画像（大きく横並び）
       var ip = item.inspPhotos || [];
       html += '<table style="width:100%"><tr>';
-      html += buildPhotoCell(ip[0], '検質1', '#ddd', '#f5f5f5');
-      html += '<td style="width:3%"></td>';
-      html += buildPhotoCell(ip[1], '検質2', '#ddd', '#f5f5f5');
+      html += buildPhotoCell(ip[0], '検質1', '#ccc', '#f5f5f5');
+      html += '<td style="width:2mm"></td>';
+      html += buildPhotoCell(ip[1], '検質2', '#ccc', '#f5f5f5');
       html += '</tr></table>';
 
-      // ── 不良画像（不良時のみ）
+      // 不良画像（不良時のみ）
       if (isNG) {
         var dp = item.defectPhotos || [];
-        html += '<table style="width:100%;margin-top:3px"><tr>';
+        html += '<table style="width:100%;margin-top:2mm"><tr>';
         html += buildPhotoCell(dp[0], '不良1', '#c0392b', '#fff0f0');
-        html += '<td style="width:3%"></td>';
+        html += '<td style="width:2mm"></td>';
         html += buildPhotoCell(dp[1], '不良2', '#c0392b', '#fff0f0');
         html += '</tr></table>';
       }
 
       html += '</div></td>';
-    });
-    // 空セル埋め
-    if (pageItems.length === 1) html += '<td style="width:50%"></td>';
-    if (pageItems.length <= 2) html += '</tr><tr><td style="width:50%"></td><td style="width:50%"></td>';
-    if (pageItems.length === 3) html += '<td style="width:50%"></td>';
+    }
     html += '</tr></table>';
 
     // フッター
-    html += '<table style="width:100%;font-size:7px;color:#999;border-top:1px solid #ccc;margin-top:4px;padding-top:2px"><tr>';
-    html += '<td>' + escapeHtml(center) + '農産センター</td>';
+    html += '<div style="position:absolute;bottom:8mm;left:10mm;right:10mm;border-top:1px solid #ccc;padding-top:2mm;font-size:8px;color:#666">';
+    html += '<table style="width:100%"><tr>';
+    html += '<td>' + escapeHtml(center) + '農産センター　TEL: ' + tel + '　FAX: ' + fax + '</td>';
     html += '<td style="text-align:right">' + (page+1) + ' / ' + totalPages + '</td>';
+    html += '</tr></table></div>';
+
+    html += '</div>'; // page
+  }
+
+  // ═══ 不良レポートページ（不良品がある場合のみ追加） ═══
+  var defectItems = parsedItems.filter(function(it) { return Number(it.defectQty) > 0; });
+  if (defectItems.length > 0) {
+    html += '<div class="page">';
+    html += '<div style="text-align:center;font-size:17px;font-weight:bold;letter-spacing:2px;margin-bottom:3mm">【まいばすけっと検質不良レポート】</div>';
+    html += '<div style="font-size:11px;font-weight:bold;margin-bottom:4mm">まいばすけっと株式会社　御中</div>';
+
+    // ヘッダー情報
+    html += '<table style="width:100%;border:1px solid #999;margin-bottom:5mm"><tr>';
+    html += '<td style="padding:2mm 4mm;border-right:1px solid #999;width:33%"><div style="font-size:8px;color:#666">検質日</div><div style="font-weight:bold;font-size:13px">' + date + '</div></td>';
+    html += '<td style="padding:2mm 4mm;border-right:1px solid #999;width:34%"><div style="font-size:8px;color:#666">センター</div><div style="font-weight:bold;font-size:13px">' + escapeHtml(center) + '農産センター</div></td>';
+    html += '<td style="padding:2mm 4mm;width:33%"><div style="font-size:8px;color:#666">報告者</div><div style="font-weight:bold;font-size:13px">' + escapeHtml(staff) + '</div></td>';
     html += '</tr></table>';
 
+    // 不良品目
+    defectItems.forEach(function(item) {
+      var dq = Number(item.defectQty) || 0;
+      var iq = Number(item.inspQty) || 0;
+      var aq = Number(item.arrivalQty) || 0;
+      var rate = iq > 0 ? (Math.round(dq / iq * 1000) / 10) : 0;
+      var reason = item.defectReason || "";
+      if (reason === "その他（手入力）" && item.defectReasonText) reason = "その他: " + item.defectReasonText;
+
+      html += '<table style="width:100%;border:1.5px solid #c0392b;margin-bottom:4mm" cellspacing="0"><tr>';
+      html += '<td colspan="2" style="background:#c0392b;color:#fff;padding:2mm 3mm;font-size:11px;font-weight:bold">⚠ ' + escapeHtml(item.name) + '</td>';
+      html += '</tr><tr>';
+
+      // 左：数値情報
+      html += '<td style="padding:3mm;vertical-align:top;width:50%">';
+      html += '<table style="width:100%;font-size:9px">';
+      html += '<tr><td style="width:33%"><span style="color:#666;font-size:7.5px">仕入先</span><br><b>' + escapeHtml(item.supplier) + '</b></td>';
+      html += '<td style="width:33%"><span style="color:#666;font-size:7.5px">産地</span><br><b>' + escapeHtml(item.origin) + '</b></td>';
+      html += '<td style="width:34%"><span style="color:#666;font-size:7.5px">入荷数</span><br><b>' + aq + ' ps</b></td></tr>';
+      html += '<tr><td><span style="color:#666;font-size:7.5px">検質数</span><br><b>' + iq + ' ps</b></td>';
+      html += '<td><span style="color:#666;font-size:7.5px">不良数</span><br><b style="color:#c0392b">' + dq + ' ps</b></td>';
+      html += '<td><span style="color:#666;font-size:7.5px">不良率</span><br><b style="color:#c0392b">' + rate + '%</b></td></tr>';
+      html += '</table>';
+      if (reason) html += '<div style="margin-top:2mm;padding:1.5mm 2mm;background:#fff5f5;border-radius:2px;font-size:8px"><b>不良理由:</b> ' + escapeHtml(reason) + '</div>';
+      html += '<div style="margin-top:1.5mm;font-size:8px;color:#555">コメント: ' + escapeHtml(item.comment || '') + '</div>';
+      html += '</td>';
+
+      // 右：不良写真
+      html += '<td style="padding:3mm;vertical-align:top;width:50%">';
+      var dp = item.defectPhotos || [];
+      html += '<table style="width:100%"><tr>';
+      html += buildPhotoCell(dp[0], '不良写真1', '#c0392b', '#fff0f0');
+      html += '<td style="width:2mm"></td>';
+      html += buildPhotoCell(dp[1], '不良写真2', '#c0392b', '#fff0f0');
+      html += '</tr></table>';
+      html += '</td></tr></table>';
+    });
+
+    // フッター
+    html += '<div style="position:absolute;bottom:8mm;left:10mm;right:10mm;border-top:1px solid #ccc;padding-top:2mm;font-size:8px;color:#666">';
+    html += escapeHtml(center) + '農産センター　TEL: ' + tel + '　FAX: ' + fax;
     html += '</div>';
+    html += '</div>'; // defect page
   }
 
   html += '</body></html>';
