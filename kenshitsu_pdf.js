@@ -6,7 +6,17 @@
 var CENTER_TEL = {"大田":"03-5735-5107","市川":"047-395-7681","浮島":"044-276-1880"};
 var CENTER_FAX = {"大田":"03-5735-5108","市川":"047-395-7682","浮島":"044-276-1881"};
 
+// HTML生成のみ（プレビュー用）
+function generatePdfHtml(center, date, staff, sampling, items) {
+  return _buildPdfFullHtml(center, date, staff, sampling, items, false);
+}
+
+// HTML生成＋印刷ウィンドウ
 function generateAndPrintPdf(center, date, staff, sampling, items) {
+  return _buildPdfFullHtml(center, date, staff, sampling, items, true);
+}
+
+function _buildPdfFullHtml(center, date, staff, sampling, items, doPrint) {
   var tel = CENTER_TEL[center] || "";
   var fax = CENTER_FAX[center] || "";
   var totalArrival = 0, totalInsp = 0;
@@ -93,15 +103,15 @@ function generateAndPrintPdf(center, date, staff, sampling, items) {
     pagesHtml += '<div class="pdf-page">';
     pagesHtml += '<div style="position:absolute;top:10mm;right:12mm;font-size:10px;">' + (pi+1) + '/' + totalPages + '</div>';
     pagesHtml += '<div style="text-align:center;font-size:17px;font-weight:700;letter-spacing:2px;margin-bottom:3mm;">【まいばすけっと検質報告書】</div>';
-    pagesHtml += '<div style="font-size:11px;font-weight:700;margin-bottom:3mm;">まいばすけっと株式会社　御中</div>';
-
-    // 品目一覧 + センター名
-    pagesHtml += '<div style="display:grid;grid-template-columns:1fr 38mm;border:1px solid #999;margin-bottom:3mm;">';
-    pagesHtml += '<div style="padding:2mm 3mm;border-right:1px solid #999;">';
-    pagesHtml += '<div style="font-size:9px;font-weight:700;margin-bottom:1.5mm;">今週の検質品目</div>';
-    pagesHtml += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0 4mm;font-size:9px;line-height:1.8;">' + itemListHtml + '</div>';
+    pagesHtml += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3mm;">';
+    pagesHtml += '<div style="font-size:11px;font-weight:700;">まいばすけっと株式会社　御中</div>';
+    pagesHtml += '<div style="font-size:11px;font-weight:700;">' + esc(center) + '農産センター</div>';
     pagesHtml += '</div>';
-    pagesHtml += '<div style="padding:2mm 3mm;display:flex;align-items:center;justify-content:center;"><div style="font-weight:700;font-size:11px;text-align:center;">' + esc(center) + '農産センター</div></div>';
+
+    // 品目一覧（フル幅）
+    pagesHtml += '<div style="border:1px solid #999;padding:2mm 3mm;margin-bottom:3mm;">';
+    pagesHtml += '<div style="font-size:9px;font-weight:700;margin-bottom:1.5mm;">今週の検質品目</div>';
+    pagesHtml += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0 4mm;font-size:8px;line-height:1.6;">' + itemListHtml + '</div>';
     pagesHtml += '</div>';
 
     // サマリーバー
@@ -201,15 +211,20 @@ function generateAndPrintPdf(center, date, staff, sampling, items) {
     '<script>window.onload=function(){window.print();}<\/script>' +
     '</body></html>';
 
-  // 印刷ウィンドウ
-  var win = window.open('', '_blank');
-  win.document.write(fullHtml);
-  win.document.close();
+  if (doPrint) {
+    // 印刷ウィンドウ
+    var win = window.open('', '_blank');
+    win.document.write(fullHtml);
+    win.document.close();
 
-  // GASにHTML送信→Drive保存（バックグラウンド）
-  savePdfToDrive(center, fileName, fullHtml);
+    // GASにHTML送信→Drive保存（バックグラウンド）
+    savePdfToDrive(center, fileName, fullHtml);
 
-  return fileName;
+    return fileName;
+  }
+
+  // プレビュー用: HTMLを返す
+  return fullHtml;
 }
 
 // GASにHTMLを送信してDriveにPDF保存

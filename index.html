@@ -1298,49 +1298,16 @@ function buildConfirm() {
 }
 
 function buildPdfPreview(pass, fail, defects) {
+  if (typeof generatePdfHtml !== 'function') {
+    document.getElementById('pdfPreview').innerHTML = '<div style="padding:20px;text-align:center;color:#999">PDF生成機能が読み込まれていません</div>';
+    return;
+  }
   var date = document.getElementById('inspDate').value;
   var staff = document.getElementById('staffSelect').value || '--';
-  var hasDefect = defects.length > 0;
-
-  var html = '<div class="pdf-preview">'
-    + '<div class="pdf-header '+(hasDefect?'has-defect':'')+'">'
-    + '<div class="pdf-title">まいばすけっと 検質報告書</div>'
-    + '<div class="pdf-info">'+state.center+'センター ｜ '+date+' ｜ 担当: '+staff+'</div></div>'
-    + '<div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:10px">'
-    + '<span>品目数: '+state.items.length+'件</span>'
-    + '<span style="color:#2ec98a">合格: '+pass+'</span>'
-    + '<span style="color:#e05565">不良: '+fail+'</span></div>'
-    + '<table style="width:100%;border-collapse:collapse;font-size:9px">'
-    + '<tr style="background:#f0f0f0"><th style="padding:3px;border:1px solid #ddd;text-align:left">#</th>'
-    + '<th style="padding:3px;border:1px solid #ddd;text-align:left">商品名</th>'
-    + '<th style="padding:3px;border:1px solid #ddd">入荷</th>'
-    + '<th style="padding:3px;border:1px solid #ddd">検質</th>'
-    + '<th style="padding:3px;border:1px solid #ddd">不良</th>'
-    + '<th style="padding:3px;border:1px solid #ddd">結果</th></tr>';
-
-  state.items.forEach(function(it, i) {
-    var dq = Number(it.defectQty) || 0;
-    var cls = dq > 0 ? 'color:#e05565;font-weight:700' : 'color:#2ec98a';
-    html += '<tr><td style="padding:2px 3px;border:1px solid #ddd">'+(i+1)+'</td>'
-      + '<td style="padding:2px 3px;border:1px solid #ddd">'+it.name+'</td>'
-      + '<td style="padding:2px 3px;border:1px solid #ddd;text-align:center">'+(it.arrivalQty||'')+'</td>'
-      + '<td style="padding:2px 3px;border:1px solid #ddd;text-align:center">'+(it.inspQty||'')+'</td>'
-      + '<td style="padding:2px 3px;border:1px solid #ddd;text-align:center">'+(dq||'')+'</td>'
-      + '<td style="padding:2px 3px;border:1px solid #ddd;text-align:center;'+cls+'">'+(dq>0?'不良':'合格')+'</td></tr>';
-  });
-  html += '</table>';
-
-  if (hasDefect) {
-    html += '<div style="margin-top:10px;padding:8px;border:1px solid #e05565;border-radius:4px;font-size:10px"><strong style="color:#e05565">不良品レポート</strong>';
-    defects.forEach(function(d) {
-      var reason = d.defectReason || '';
-      if (reason === 'その他（手入力）') reason = 'その他: '+(d.defectReasonText||'');
-      html += '<div style="margin-top:4px">• '+d.name+' — 不良'+d.defectQty+'個 ('+d.defectRate+'%) '+reason+'</div>';
-    });
-    html += '</div>';
-  }
-  html += '</div>';
-  document.getElementById('pdfPreview').innerHTML = html;
+  var pdfHtml = generatePdfHtml(state.center, date, staff, '', state.items);
+  // プレビュー用にiframeで表示
+  var iframe = '<iframe srcdoc="' + pdfHtml.replace(/"/g, '&quot;') + '" style="width:100%;height:500px;border:none;background:#fff"></iframe>';
+  document.getElementById('pdfPreview').innerHTML = iframe;
 }
 
 async function savePdf() {
