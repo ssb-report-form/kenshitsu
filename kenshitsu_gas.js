@@ -96,6 +96,7 @@ function doPost(e) {
       case "listFiles":    return handleListFiles(data);
       case "saveReport":   return handleSaveReport(data);
       case "saveDefectImage": return handleSaveDefectImage(data);
+      case "savePdfHtml":    return handleSavePdfHtml(data);
       case "savePdf":      return handleSavePdf(data);
       default:             return ok({ message: "unknown action: " + data.action });
     }
@@ -538,7 +539,34 @@ function handleSaveReport(data) {
 
 
 // ═══════════════════════════════════════════════════════════════
-// 5b. 不良画像をDriveに保存
+// 5b. HTML→PDF変換→Drive保存（ブラウザからHTML受け取り）
+// ═══════════════════════════════════════════════════════════════
+
+function handleSavePdfHtml(data) {
+  var center = data.center || "";
+  var fileName = data.fileName || "検質報告書.pdf";
+  var html = data.html || "";
+
+  if (!html) return error("HTMLが空です");
+  if (!fileName.match(/\.pdf$/)) fileName += ".pdf";
+
+  var folderId = CONFIG.DRIVE_FOLDERS[center];
+  if (!folderId) return error("センター「" + center + "」のPDF保存先フォルダが未設定です");
+
+  try {
+    var blob = HtmlService.createHtmlOutput(html).getBlob().setName(fileName);
+    var folder = DriveApp.getFolderById(folderId);
+    var file = folder.createFile(blob);
+    return ok({ saved: true, fileId: file.getId(), fileName: file.getName(), fileUrl: file.getUrl() });
+  } catch (e) {
+    Logger.log("savePdfHtml error: " + e);
+    return error("PDF保存に失敗: " + e.toString());
+  }
+}
+
+
+// ═══════════════════════════════════════════════════════════════
+// 5c. 不良画像をDriveに保存
 // ═══════════════════════════════════════════════════════════════
 
 function handleSaveDefectImage(data) {

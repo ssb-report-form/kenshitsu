@@ -674,6 +674,7 @@ textarea.form-input{resize:vertical;min-height:80px}
 
 <!-- GAS連携コード（外部JSファイル） -->
 <script src="kenshitsu_connector.js"></script>
+<script src="kenshitsu_pdf.js"></script>
 
 <script>
 // ══════════════════════════════════════
@@ -1343,53 +1344,44 @@ function buildPdfPreview(pass, fail, defects) {
 }
 
 async function savePdf() {
-  showLoading('PDFを生成してDriveに保存中...');
+  showLoading('PDF生成中...');
 
-  const date = document.getElementById('inspDate').value;
-  const staff = document.getElementById('staffSelect').value || '';
-  var memo = '';
+  var date = document.getElementById('inspDate').value;
+  var staff = document.getElementById('staffSelect').value || '';
 
-  let result;
-  if (typeof gasSaveReport === 'function' && typeof gasSavePdf === 'function') {
-    // 1) 検査結果をスプレッドシートに保存
+  // 1) 検査結果をスプレッドシートに保存（GAS連携時）
+  if (typeof gasSaveReport === 'function') {
     await gasSaveReport(state.center, date, staff, state.items);
-    // 2) 不良画像をDriveに保存
-    if (typeof gasSaveDefectImage === 'function') {
-      var deliveryDate = calcDeliveryDate(date);
-      for (var i = 0; i < state.items.length; i++) {
-        var it = state.items[i];
-        if (it.defectPhotos) {
-          for (var j = 0; j < it.defectPhotos.length; j++) {
-            if (it.defectPhotos[j]) {
-              await gasSaveDefectImage(state.center, deliveryDate, it.name, it.defectPhotos[j], j+1);
-            }
+  }
+
+  // 2) 不良画像をDriveに保存（GAS連携時）
+  if (typeof gasSaveDefectImage === 'function') {
+    var deliveryDate = calcDeliveryDate(date);
+    for (var i = 0; i < state.items.length; i++) {
+      var it = state.items[i];
+      if (it.defectPhotos) {
+        for (var j = 0; j < it.defectPhotos.length; j++) {
+          if (it.defectPhotos[j]) {
+            await gasSaveDefectImage(state.center, deliveryDate, it.name, it.defectPhotos[j], j+1);
           }
         }
       }
     }
-    // 3) PDFを生成してDriveに保存
-    result = await gasSavePdf(state.center, date, staff, state.items);
+  }
+
+  hideLoading();
+
+  // 3) ブラウザでPDF出力（印刷ダイアログ）
+  if (typeof generateAndPrintPdf === 'function') {
+    var fileName = generateAndPrintPdf(state.center, date, staff, '', state.items);
+    toast('PDF出力＆Drive保存中...','success');
   } else {
-    await sleep(1000);
-    var dateStr = date.replace(/-/g, '');
-    result = { ok:true, demo:true, fileName:'【'+state.center+'農産】検質報告書_'+dateStr+'店着.pdf' };
+    toast('PDF生成機能が読み込まれていません','error');
   }
 
   // 途中保存データをクリア
   if (typeof clearProgress === 'function') clearProgress(state.center, date);
   else try { localStorage.removeItem('kenshitsu_progress_'+state.center+'_'+date); } catch(e) {}
-
-  hideLoading();
-
-  if (result.ok) {
-    if (result.demo) {
-      toast('PDFを保存しました（デモモード）','success');
-    } else {
-      toast('PDFをDriveに保存しました: ' + result.fileName,'success');
-    }
-  } else {
-    toast('保存に失敗しました: ' + (result.message || ''),'error');
-  }
 }
 
 // ══════════════════════════════════════
