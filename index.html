@@ -1049,18 +1049,24 @@ function renderItems() {
     if (done && dq > 0) badge = '<div class="item-btn fail">✗</div>';
     else if (done) badge = '<div class="item-btn pass">✓</div>';
     else badge = '<div class="item-btn">−</div>';
-    return '<div class="item-row" style="position:relative">'
-      + '<div style="flex:1;display:flex;align-items:center;gap:10px;cursor:pointer" onclick="openInspection('+i+')">'
-      + '<div class="item-num">'+(i+1)+'</div>'
-      + '<div class="item-body">'
-      + '<div class="item-name">'+it.name+'</div>'
-      + '<div class="item-meta">'+(it.origin || '<span style="color:var(--amb)">産地未入力</span>')+' / '+it.supplier+'</div>'
+    var originDisp = it.origin
+      ? '<span style="color:var(--grn)">' + it.origin + '</span>'
+      : '<span style="color:var(--amb)">産地未入力</span>';
+    return '<div class="item-row" style="position:relative;flex-wrap:wrap;padding:8px 0">'
+      + '<div style="display:flex;align-items:flex-start;gap:8px;width:100%;cursor:pointer" onclick="openInspection('+i+')">'
+      + '<div class="item-num" style="margin-top:2px">'+(i+1)+'</div>'
+      + '<div style="flex:1;min-width:0">'
+      + '<div style="font-size:13px;font-weight:500;word-break:break-all;line-height:1.3">'+it.name+'</div>'
+      + '<div style="display:flex;flex-wrap:wrap;gap:4px 10px;margin-top:3px;font-size:11px">'
+      + '<div>📍 '+originDisp+'</div>'
+      + '<div>🏢 <span style="color:var(--tx2)">'+it.supplier+'</span></div>'
       + '</div>'
+      + '</div>'
+      + '<div style="display:flex;align-items:center;gap:4px;flex-shrink:0">'
       + badge
+      + '<button onclick="event.stopPropagation();copyItem('+i+')" style="background:var(--bbg);color:var(--blu);border:none;border-radius:6px;padding:4px 7px;font-size:11px;cursor:pointer" title="コピー">📋</button>'
+      + '<button onclick="event.stopPropagation();deleteItem('+i+')" style="background:var(--rbg);color:var(--red);border:none;border-radius:6px;padding:4px 7px;font-size:11px;cursor:pointer" title="削除">✕</button>'
       + '</div>'
-      + '<div style="display:flex;gap:4px;flex-shrink:0;margin-left:6px">'
-      + '<button onclick="copyItem('+i+')" style="background:var(--bbg);color:var(--blu);border:none;border-radius:6px;padding:4px 7px;font-size:11px;cursor:pointer" title="コピー">📋</button>'
-      + '<button onclick="deleteItem('+i+')" style="background:var(--rbg);color:var(--red);border:none;border-radius:6px;padding:4px 7px;font-size:11px;cursor:pointer" title="削除">✕</button>'
       + '</div>'
       + '</div>';
   }).join('');
