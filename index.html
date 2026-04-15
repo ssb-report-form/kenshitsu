@@ -66,12 +66,12 @@ body.no-nav{padding-bottom:0}
 @keyframes fu{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 
 /* ─── Section heading ─── */
-.sec-h{font-size:11px;font-weight:500;color:var(--tx3);text-transform:uppercase;letter-spacing:.08em;margin:16px 0 8px}
+.sec-h{font-size:14px;font-weight:600;color:var(--tx3);letter-spacing:.05em;margin:18px 0 10px}
 .sec-h:first-child{margin-top:0}
 
 /* ─── Page title ─── */
-.pg-title{font-size:17px;font-weight:700;margin-bottom:2px}
-.pg-sub{font-size:11px;color:var(--tx2);margin-bottom:14px}
+.pg-title{font-size:20px;font-weight:700;margin-bottom:4px}
+.pg-sub{font-size:14px;color:var(--tx2);margin-bottom:16px}
 
 /* ─── Card ─── */
 .card{background:var(--s1);border:1px solid var(--bdr);border-radius:var(--r2);padding:14px 15px;position:relative;overflow:hidden;margin-bottom:10px}
@@ -94,11 +94,11 @@ body.no-nav{padding-bottom:0}
 
 /* ─── Form elements ─── */
 .form-group{margin-bottom:14px}
-.form-label{display:block;font-size:10px;font-weight:500;color:var(--tx2);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px}
+.form-label{display:block;font-size:13px;font-weight:600;color:var(--tx2);letter-spacing:.05em;margin-bottom:8px}
 .form-input,.form-select{
-  width:100%;padding:11px 13px;
+  width:100%;padding:14px 14px;
   background:var(--s2);border:1px solid var(--bdr2);border-radius:var(--r);
-  color:var(--tx);font-size:14px;font-family:'Noto Sans JP',sans-serif;
+  color:var(--tx);font-size:17px;font-family:'Noto Sans JP',sans-serif;
   outline:none;transition:border-color .2s;
   -webkit-appearance:none;
 }
@@ -111,8 +111,8 @@ body.no-nav{padding-bottom:0}
 /* ─── Buttons ─── */
 .btn{
   display:flex;align-items:center;justify-content:center;gap:8px;
-  width:100%;padding:13px;border:none;border-radius:var(--r);
-  font-size:14px;font-weight:600;font-family:'Noto Sans JP',sans-serif;
+  width:100%;padding:16px;border:none;border-radius:var(--r);
+  font-size:16px;font-weight:600;font-family:'Noto Sans JP',sans-serif;
   cursor:pointer;transition:all .2s;
 }
 .btn-gold{background:linear-gradient(135deg,var(--gold),var(--gold2));color:#0c1929}
@@ -161,9 +161,9 @@ body.no-nav{padding-bottom:0}
 .item-meta{font-size:10px;color:var(--tx3);margin-top:1px}
 .item-actions{display:flex;gap:6px;flex-shrink:0}
 .item-btn{
-  width:36px;height:36px;border-radius:8px;border:1px solid var(--bdr);
+  width:42px;height:42px;border-radius:10px;border:1px solid var(--bdr);
   display:flex;align-items:center;justify-content:center;
-  background:var(--s2);color:var(--tx2);cursor:pointer;font-size:16px;
+  background:var(--s2);color:var(--tx2);cursor:pointer;font-size:20px;
   transition:all .15s;
 }
 .item-btn:active{background:var(--s3)}
@@ -185,8 +185,8 @@ body.no-nav{padding-bottom:0}
 }
 @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
 .modal-handle{width:36px;height:4px;background:var(--tx3);border-radius:2px;margin:0 auto 16px}
-.modal-title{font-size:15px;font-weight:700;margin-bottom:4px}
-.modal-sub{font-size:11px;color:var(--tx2);margin-bottom:16px}
+.modal-title{font-size:20px;font-weight:700;margin-bottom:6px}
+.modal-sub{font-size:14px;color:var(--tx2);margin-bottom:16px}
 
 /* ─── Result badges ─── */
 .result-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
@@ -273,7 +273,7 @@ body.no-nav{padding-bottom:0}
 .toast{
   position:fixed;top:80px;left:50%;transform:translateX(-50%) translateY(-20px);z-index:200;
   background:var(--s1);border:1px solid var(--bdr2);border-radius:var(--r);
-  padding:10px 18px;font-size:12px;font-weight:500;
+  padding:12px 20px;font-size:15px;font-weight:500;
   opacity:0;transition:all .3s;pointer-events:none;
   box-shadow:0 8px 32px rgba(0,0,0,.4);
 }
@@ -613,12 +613,12 @@ textarea.form-input{resize:vertical;min-height:80px}
     <div class="sec-h">検質画像 <span style="color:var(--red);font-size:8px">2枚必須</span></div>
     <div class="card">
       <div style="display:flex;gap:8px;margin-bottom:8px">
-        <div id="inspThumb0" style="flex:1;height:80px;border:1px dashed var(--bdr);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--tx3);overflow:hidden;position:relative">1枚目</div>
-        <div id="inspThumb1" style="flex:1;height:80px;border:1px dashed var(--bdr);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--tx3);overflow:hidden;position:relative">2枚目</div>
+        <div id="inspThumb0" style="flex:1;height:100px;border:1px dashed var(--bdr);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--tx3);overflow:hidden;position:relative">1枚目</div>
+        <div id="inspThumb1" style="flex:1;height:100px;border:1px dashed var(--bdr);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--tx3);overflow:hidden;position:relative">2枚目</div>
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap">
-        <button type="button" class="btn btn-outline" style="flex:1;font-size:11px;padding:7px" onclick="triggerPhoto('insp','camera')">📷 撮影</button>
-        <button type="button" class="btn btn-outline" style="flex:1;font-size:11px;padding:7px" onclick="triggerPhoto('insp','album')">🖼 アルバム</button>
+        <button type="button" class="btn btn-outline" style="flex:1;font-size:15px;padding:12px" onclick="triggerPhoto('insp','camera')">📷 撮影</button>
+        <button type="button" class="btn btn-outline" style="flex:1;font-size:15px;padding:12px" onclick="triggerPhoto('insp','album')">🖼 アルバム</button>
       </div>
       <input type="file" id="inspCameraInput" accept="image/*" capture="environment" style="display:none">
       <input type="file" id="inspAlbumInput" accept="image/*" style="display:none">
@@ -660,12 +660,12 @@ textarea.form-input{resize:vertical;min-height:80px}
       <div class="card" style="border-color:rgba(224,85,101,.2)">
         <div style="font-size:10px;color:var(--tx3);margin-bottom:8px">欠品等の理由で画像がない場合は添付不要です</div>
         <div style="display:flex;gap:8px;margin-bottom:8px">
-          <div id="defectThumb0" style="flex:1;height:80px;border:1px dashed rgba(224,85,101,.3);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--red);overflow:hidden;position:relative">不良1</div>
-          <div id="defectThumb1" style="flex:1;height:80px;border:1px dashed rgba(224,85,101,.3);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--red);overflow:hidden;position:relative">不良2</div>
+          <div id="defectThumb0" style="flex:1;height:100px;border:1px dashed rgba(224,85,101,.3);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--red);overflow:hidden;position:relative">不良1</div>
+          <div id="defectThumb1" style="flex:1;height:100px;border:1px dashed rgba(224,85,101,.3);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--red);overflow:hidden;position:relative">不良2</div>
         </div>
         <div style="display:flex;gap:6px;flex-wrap:wrap">
-          <button type="button" class="btn btn-outline" style="flex:1;font-size:11px;padding:7px;color:var(--red);border-color:rgba(224,85,101,.3)" onclick="triggerPhoto('defect','camera')">📷 撮影</button>
-          <button type="button" class="btn btn-outline" style="flex:1;font-size:11px;padding:7px;color:var(--red);border-color:rgba(224,85,101,.3)" onclick="triggerPhoto('defect','album')">🖼 アルバム</button>
+          <button type="button" class="btn btn-outline" style="flex:1;font-size:15px;padding:12px;color:var(--red);border-color:rgba(224,85,101,.3)" onclick="triggerPhoto('defect','camera')">📷 撮影</button>
+          <button type="button" class="btn btn-outline" style="flex:1;font-size:15px;padding:12px;color:var(--red);border-color:rgba(224,85,101,.3)" onclick="triggerPhoto('defect','album')">🖼 アルバム</button>
         </div>
         <input type="file" id="defectCameraInput" accept="image/*" capture="environment" style="display:none">
         <input type="file" id="defectAlbumInput" accept="image/*" style="display:none">
@@ -1052,19 +1052,19 @@ function renderItems() {
     var originDisp = it.origin
       ? '<span style="color:var(--grn)">' + it.origin + '</span>'
       : '<span style="color:var(--amb)">産地未入力</span>';
-    return '<div class="item-row" style="display:block;padding:8px 0;cursor:pointer" onclick="openInspection('+i+')">'
-      + '<div style="display:flex;align-items:flex-start;gap:8px">'
-      + '<div class="item-num" style="margin-top:2px">'+(i+1)+'</div>'
+    return '<div class="item-row" style="display:block;padding:12px 0;cursor:pointer" onclick="openInspection('+i+')">'
+      + '<div style="display:flex;align-items:flex-start;gap:10px">'
+      + '<div class="item-num" style="margin-top:3px;width:32px;height:32px;font-size:14px">'+(i+1)+'</div>'
       + '<div style="flex:1;min-width:0">'
-      + '<div style="font-size:13px;font-weight:600;word-break:break-all;line-height:1.3">'+it.name+'</div>'
-      + '<div style="font-size:11px;margin-top:2px">📍 '+originDisp+'</div>'
-      + '<div style="font-size:11px;color:var(--tx2);margin-top:1px">🏢 '+it.supplier+'</div>'
+      + '<div style="font-size:16px;font-weight:600;word-break:break-all;line-height:1.4">'+it.name+'</div>'
+      + '<div style="font-size:14px;margin-top:4px">📍 '+originDisp+'</div>'
+      + '<div style="font-size:14px;color:var(--tx2);margin-top:2px">🏢 '+it.supplier+'</div>'
       + '</div>'
-      + badge
+      + '<div style="flex-shrink:0">' + badge + '</div>'
       + '</div>'
-      + '<div style="display:flex;justify-content:flex-end;gap:6px;margin-top:4px;padding-left:32px">'
-      + '<button onclick="event.stopPropagation();copyItem('+i+')" style="background:var(--bbg);color:var(--blu);border:none;border-radius:6px;padding:3px 8px;font-size:10px;cursor:pointer">📋 コピー</button>'
-      + '<button onclick="event.stopPropagation();deleteItem('+i+')" style="background:var(--rbg);color:var(--red);border:none;border-radius:6px;padding:3px 8px;font-size:10px;cursor:pointer">✕ 削除</button>'
+      + '<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:6px;padding-left:42px">'
+      + '<button onclick="event.stopPropagation();copyItem('+i+')" style="background:var(--bbg);color:var(--blu);border:none;border-radius:8px;padding:6px 12px;font-size:13px;cursor:pointer">📋 コピー</button>'
+      + '<button onclick="event.stopPropagation();deleteItem('+i+')" style="background:var(--rbg);color:var(--red);border:none;border-radius:8px;padding:6px 12px;font-size:13px;cursor:pointer">✕ 削除</button>'
       + '</div>'
       + '</div>';
   }).join('');
