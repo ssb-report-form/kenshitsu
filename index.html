@@ -615,11 +615,11 @@ textarea.form-input{resize:vertical;min-height:80px}
       <div class="photo-area" id="inspPhotoArea">
         <label class="photo-thumb" id="inspPhotoAdd1">
           <div style="text-align:center"><div style="font-size:20px">📷</div><div style="font-size:8px;color:var(--tx3)">1枚目</div></div>
-          <input type="file" accept="image/*" capture="environment" style="display:none" onchange="addInspPhoto(event,0)">
+          <input type="file" accept="image/*" style="display:none" onchange="addInspPhoto(event,0)">
         </label>
         <label class="photo-thumb" id="inspPhotoAdd2">
           <div style="text-align:center"><div style="font-size:20px">📷</div><div style="font-size:8px;color:var(--tx3)">2枚目</div></div>
-          <input type="file" accept="image/*" capture="environment" style="display:none" onchange="addInspPhoto(event,1)">
+          <input type="file" accept="image/*" style="display:none" onchange="addInspPhoto(event,1)">
         </label>
       </div>
     </div>
@@ -662,11 +662,11 @@ textarea.form-input{resize:vertical;min-height:80px}
         <div class="photo-area" id="defectPhotoArea">
           <label class="photo-thumb" id="defectPhotoAdd1">
             <div style="text-align:center"><div style="font-size:20px">📷</div><div style="font-size:8px;color:var(--red)">不良1</div></div>
-            <input type="file" accept="image/*" capture="environment" style="display:none" onchange="addDefectPhoto(event,0)">
+            <input type="file" accept="image/*" style="display:none" onchange="addDefectPhoto(event,0)">
           </label>
           <label class="photo-thumb" id="defectPhotoAdd2">
             <div style="text-align:center"><div style="font-size:20px">📷</div><div style="font-size:8px;color:var(--red)">不良2</div></div>
-            <input type="file" accept="image/*" capture="environment" style="display:none" onchange="addDefectPhoto(event,1)">
+            <input type="file" accept="image/*" style="display:none" onchange="addDefectPhoto(event,1)">
           </label>
         </div>
       </div>
@@ -1146,13 +1146,13 @@ function restorePhotoThumbs(labelId, dataUrl) {
   if (!label) return;
   if (dataUrl) {
     label.innerHTML = '<img src="'+dataUrl+'" style="width:100%;height:100%;object-fit:cover;border-radius:8px">'
-      + '<input type="file" accept="image/*" capture="environment" style="display:none" onchange="'+label.querySelector('input')?.getAttribute('onchange')+'">';
+      + '<input type="file" accept="image/*" style="display:none" onchange="'+label.querySelector('input')?.getAttribute('onchange')+'">';
     // Re-attach input
     var origOnchange = labelId.indexOf('insp') >= 0
       ? (labelId.indexOf('1') >= 0 ? 'addInspPhoto(event,0)' : 'addInspPhoto(event,1)')
       : (labelId.indexOf('1') >= 0 ? 'addDefectPhoto(event,0)' : 'addDefectPhoto(event,1)');
     label.innerHTML = '<img src="'+dataUrl+'" style="width:100%;height:100%;object-fit:cover;border-radius:8px">'
-      + '<input type="file" accept="image/*" capture="environment" style="display:none" onchange="'+origOnchange+'">';
+      + '<input type="file" accept="image/*" style="display:none" onchange="'+origOnchange+'">';
   } else {
     var isDefect = labelId.indexOf('defect') >= 0;
     var num = labelId.indexOf('1') >= 0 ? '1' : '2';
@@ -1161,7 +1161,7 @@ function restorePhotoThumbs(labelId, dataUrl) {
     var sublabel = isDefect ? '不良'+num : num+'枚目';
     var color = isDefect ? 'var(--red)' : 'var(--tx3)';
     label.innerHTML = '<div style="text-align:center"><div style="font-size:20px">'+icon+'</div><div style="font-size:8px;color:'+color+'">'+sublabel+'</div></div>'
-      + '<input type="file" accept="image/*" capture="environment" style="display:none" onchange="'+origOnchange+'">';
+      + '<input type="file" accept="image/*" style="display:none" onchange="'+origOnchange+'">';
   }
 }
 
