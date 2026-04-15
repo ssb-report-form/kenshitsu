@@ -1052,21 +1052,19 @@ function renderItems() {
     var originDisp = it.origin
       ? '<span style="color:var(--grn)">' + it.origin + '</span>'
       : '<span style="color:var(--amb)">産地未入力</span>';
-    return '<div class="item-row" style="position:relative;flex-wrap:wrap;padding:8px 0">'
-      + '<div style="display:flex;align-items:flex-start;gap:8px;width:100%;cursor:pointer" onclick="openInspection('+i+')">'
+    return '<div class="item-row" style="display:block;padding:8px 0;cursor:pointer" onclick="openInspection('+i+')">'
+      + '<div style="display:flex;align-items:flex-start;gap:8px">'
       + '<div class="item-num" style="margin-top:2px">'+(i+1)+'</div>'
       + '<div style="flex:1;min-width:0">'
-      + '<div style="font-size:13px;font-weight:500;word-break:break-all;line-height:1.3">'+it.name+'</div>'
-      + '<div style="display:flex;flex-wrap:wrap;gap:4px 10px;margin-top:3px;font-size:11px">'
-      + '<div>📍 '+originDisp+'</div>'
-      + '<div>🏢 <span style="color:var(--tx2)">'+it.supplier+'</span></div>'
+      + '<div style="font-size:13px;font-weight:600;word-break:break-all;line-height:1.3">'+it.name+'</div>'
+      + '<div style="font-size:11px;margin-top:2px">📍 '+originDisp+'</div>'
+      + '<div style="font-size:11px;color:var(--tx2);margin-top:1px">🏢 '+it.supplier+'</div>'
       + '</div>'
-      + '</div>'
-      + '<div style="display:flex;align-items:center;gap:4px;flex-shrink:0">'
       + badge
-      + '<button onclick="event.stopPropagation();copyItem('+i+')" style="background:var(--bbg);color:var(--blu);border:none;border-radius:6px;padding:4px 7px;font-size:11px;cursor:pointer" title="コピー">📋</button>'
-      + '<button onclick="event.stopPropagation();deleteItem('+i+')" style="background:var(--rbg);color:var(--red);border:none;border-radius:6px;padding:4px 7px;font-size:11px;cursor:pointer" title="削除">✕</button>'
       + '</div>'
+      + '<div style="display:flex;justify-content:flex-end;gap:6px;margin-top:4px;padding-left:32px">'
+      + '<button onclick="event.stopPropagation();copyItem('+i+')" style="background:var(--bbg);color:var(--blu);border:none;border-radius:6px;padding:3px 8px;font-size:10px;cursor:pointer">📋 コピー</button>'
+      + '<button onclick="event.stopPropagation();deleteItem('+i+')" style="background:var(--rbg);color:var(--red);border:none;border-radius:6px;padding:3px 8px;font-size:10px;cursor:pointer">✕ 削除</button>'
       + '</div>'
       + '</div>';
   }).join('');
