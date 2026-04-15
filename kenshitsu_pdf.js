@@ -53,14 +53,15 @@ function _buildPdfFullHtml(center, date, staff, sampling, items, doPrint) {
     var reason = item.defectReason || '';
     if (reason === 'その他（手入力）' && item.defectReasonText) reason = 'その他: ' + item.defectReasonText;
 
-    // 検質写真
+    // 検質写真（高さ固定で縦長画像もはみ出さない）
+    var photoH = '30mm';
     var photosHtml = '';
     var ip = item.inspPhotos || [];
     for (var p = 0; p < 2; p++) {
       if (ip[p]) {
-        photosHtml += '<div style="flex:1;border:1px solid #ccc;overflow:hidden;"><img src="' + ip[p] + '" style="width:100%;height:100%;object-fit:cover;display:block;"></div>';
+        photosHtml += '<div style="flex:1;height:' + photoH + ';border:1px solid #ccc;overflow:hidden;"><img src="' + ip[p] + '" style="width:100%;height:100%;object-fit:contain;display:block;background:#f9f9f9;"></div>';
       } else {
-        photosHtml += '<div style="flex:1;border:1px dashed #ccc;display:flex;align-items:center;justify-content:center;font-size:8px;color:#aaa;">写真' + (p+1) + '</div>';
+        photosHtml += '<div style="flex:1;height:' + photoH + ';border:1px dashed #ccc;display:flex;align-items:center;justify-content:center;font-size:8px;color:#aaa;">写真' + (p+1) + '</div>';
       }
     }
 
@@ -83,7 +84,7 @@ function _buildPdfFullHtml(center, date, staff, sampling, items, doPrint) {
       h += '<div style="background:#fff5f5;border-radius:2px;padding:1.5mm 2mm;border-left:3px solid #c0392b;font-size:8px;margin-bottom:1.5mm;"><b>不良理由:</b> ' + esc(reason) + '</div>';
     }
     h += '<div style="border-top:1px solid #eee;padding-top:1.5mm;margin-bottom:2mm;font-size:9px;' + (isNG ? 'background:#fff5f5;border-radius:2px;padding:1.5mm 2mm;border-top:none;' : '') + '"><span style="color:#000;">コメント</span>　' + esc(item.comment || '特に問題無し') + '</div>';
-    h += '<div style="display:flex;gap:2mm;flex:1;min-height:35mm;">' + photosHtml + '</div>';
+    h += '<div style="display:flex;gap:2mm;height:30mm;overflow:hidden;">' + photosHtml + '</div>';
     h += '</div></div>';
     return h;
   }
@@ -179,9 +180,9 @@ function _buildPdfFullHtml(center, date, staff, sampling, items, doPrint) {
       var dp = item.defectPhotos || [];
       for (var p = 0; p < 2; p++) {
         if (dp[p]) {
-          pagesHtml += '<div style="flex:1;border:1px solid #ccc;border-radius:3px;overflow:hidden;"><img src="' + dp[p] + '" style="width:100%;height:35mm;object-fit:cover;display:block;"></div>';
+          pagesHtml += '<div style="flex:1;height:30mm;border:1px solid #ccc;border-radius:3px;overflow:hidden;"><img src="' + dp[p] + '" style="width:100%;height:100%;object-fit:contain;display:block;background:#f9f9f9;"></div>';
         } else {
-          pagesHtml += '<div style="flex:1;border:1px dashed #ccc;border-radius:3px;height:35mm;display:flex;align-items:center;justify-content:center;font-size:8px;color:#aaa;">写真' + (p+1) + '</div>';
+          pagesHtml += '<div style="flex:1;height:30mm;border:1px dashed #ccc;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:8px;color:#aaa;">写真' + (p+1) + '</div>';
         }
       }
       pagesHtml += '</div>';
