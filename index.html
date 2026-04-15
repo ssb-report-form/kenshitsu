@@ -536,8 +536,11 @@ textarea.form-input{resize:vertical;min-height:80px}
     <div style="font-size:12px;color:var(--tx3);text-align:center;padding:10px">不良品はありません</div>
   </div>
 
-  <div class="sec-h">PDF プレビュー</div>
-  <div id="pdfPreview" class="card" style="padding:0;overflow:hidden">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin:16px 0 8px">
+    <span style="font-size:11px;font-weight:500;color:var(--tx3);text-transform:uppercase;letter-spacing:.08em">PDF プレビュー</span>
+    <button class="btn btn-outline" onclick="togglePreview()" id="previewToggle" style="font-size:10px;padding:4px 10px">▶ 表示</button>
+  </div>
+  <div id="pdfPreview" class="card" style="padding:0;overflow:hidden;display:none">
     <!-- generated at runtime -->
   </div>
 
@@ -1312,7 +1315,10 @@ function buildConfirm() {
     dl.innerHTML = '<div style="font-size:12px;color:var(--grn);text-align:center;padding:10px">✓ 不良品はありません</div>';
   }
 
-  buildPdfPreview(pass, fail, defects);
+  // プレビューがONなら更新
+  if (document.getElementById('pdfPreview').style.display !== 'none') {
+    buildPdfPreview();
+  }
 }
 
 function buildPdfPreview(pass, fail, defects) {
@@ -1410,6 +1416,20 @@ async function savePdf() {
   // 途中保存データをクリア
   if (typeof clearProgress === 'function') clearProgress(state.center, date);
   else try { localStorage.removeItem('kenshitsu_progress_'+state.center+'_'+date); } catch(e) {}
+}
+
+// プレビュー ON/OFF
+function togglePreview() {
+  var el = document.getElementById('pdfPreview');
+  var btn = document.getElementById('previewToggle');
+  if (el.style.display === 'none') {
+    el.style.display = '';
+    btn.textContent = '▼ 非表示';
+    buildPdfPreview();
+  } else {
+    el.style.display = 'none';
+    btn.textContent = '▶ 表示';
+  }
 }
 
 // 印刷・PDF出力（別ボタン）

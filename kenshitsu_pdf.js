@@ -72,17 +72,17 @@ function _buildPdfFullHtml(center, date, staff, sampling, items, doPrint) {
     // ボディ
     h += '<div style="padding:1.5mm 3mm;font-size:9px;flex:1;display:flex;flex-direction:column;">';
     h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5mm;margin-bottom:2mm;">';
-    h += '<div><span style="color:#666;font-size:8px;">仕入先</span><br>' + esc(item.supplier || '-') + '</div>';
-    h += '<div><span style="color:#666;font-size:8px;">産地</span><br>' + esc(item.origin || '-') + '</div>';
-    h += '<div><span style="color:#666;font-size:8px;">入荷数</span><br><b>' + aq + ' ps</b></div>';
-    h += '<div><span style="color:#666;font-size:8px;">検質数</span><br><b>' + iq + ' ps</b></div>';
-    h += '<div><span style="color:#666;font-size:8px;">不良数</span><br><b' + (isNG ? ' style="color:#c0392b;"' : '') + '>' + dq + ' ps</b></div>';
-    h += '<div><span style="color:#666;font-size:8px;">不良率</span><br><b' + (isNG ? ' style="color:#c0392b;"' : '') + '>' + rate + '%</b></div>';
+    h += '<div><span style="color:#000;font-size:8px;">仕入先</span><br>' + esc(item.supplier || '-') + '</div>';
+    h += '<div><span style="color:#000;font-size:8px;">産地</span><br>' + esc(item.origin || '-') + '</div>';
+    h += '<div><span style="color:#000;font-size:8px;">入荷数</span><br><b>' + aq + ' ps</b></div>';
+    h += '<div><span style="color:#000;font-size:8px;">検質数</span><br><b>' + iq + ' ps</b></div>';
+    h += '<div><span style="color:#000;font-size:8px;">不良数</span><br><b' + (isNG ? ' style="color:#c0392b;"' : '') + '>' + dq + ' ps</b></div>';
+    h += '<div><span style="color:#000;font-size:8px;">不良率</span><br><b' + (isNG ? ' style="color:#c0392b;"' : '') + '>' + rate + '%</b></div>';
     h += '</div>';
     if (isNG && reason) {
       h += '<div style="background:#fff5f5;border-radius:2px;padding:1.5mm 2mm;border-left:3px solid #c0392b;font-size:8px;margin-bottom:1.5mm;"><b>不良理由:</b> ' + esc(reason) + '</div>';
     }
-    h += '<div style="border-top:1px solid #eee;padding-top:1.5mm;margin-bottom:2mm;font-size:9px;' + (isNG ? 'background:#fff5f5;border-radius:2px;padding:1.5mm 2mm;border-top:none;' : '') + '"><span style="color:#666;">コメント</span>　' + esc(item.comment || '特に問題無し') + '</div>';
+    h += '<div style="border-top:1px solid #eee;padding-top:1.5mm;margin-bottom:2mm;font-size:9px;' + (isNG ? 'background:#fff5f5;border-radius:2px;padding:1.5mm 2mm;border-top:none;' : '') + '"><span style="color:#000;">コメント</span>　' + esc(item.comment || '特に問題無し') + '</div>';
     h += '<div style="display:flex;gap:2mm;flex:1;min-height:35mm;">' + photosHtml + '</div>';
     h += '</div></div>';
     return h;
@@ -102,7 +102,7 @@ function _buildPdfFullHtml(center, date, staff, sampling, items, doPrint) {
 
     pagesHtml += '<div class="pdf-page">';
     pagesHtml += '<div style="position:absolute;top:10mm;right:12mm;font-size:10px;">' + (pi+1) + '/' + totalPages + '</div>';
-    pagesHtml += '<div style="text-align:center;font-size:17px;font-weight:700;letter-spacing:2px;margin-bottom:3mm;">【まいばすけっと検質報告書】</div>';
+    pagesHtml += '<div style="text-align:center;font-size:17px;font-weight:700;letter-spacing:2px;margin-bottom:3mm;color:#000;">【まいばすけっと検質報告書】</div>';
     pagesHtml += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3mm;">';
     pagesHtml += '<div style="font-size:11px;font-weight:700;">まいばすけっと株式会社　御中</div>';
     pagesHtml += '<div style="font-size:11px;font-weight:700;">' + esc(center) + '農産センター</div>';
@@ -116,19 +116,19 @@ function _buildPdfFullHtml(center, date, staff, sampling, items, doPrint) {
 
     // サマリーバー
     pagesHtml += '<div style="display:flex;border:1px solid #999;margin-bottom:4mm;">';
-    pagesHtml += '<div style="padding:1.5mm 3mm;border-right:1px solid #999;flex:2;"><div style="font-size:8px;color:#666;">検質日</div><div style="font-weight:700;font-size:13px;">' + date + '</div></div>';
-    pagesHtml += '<div style="padding:1.5mm 3mm;border-right:1px solid #999;flex:2;"><div style="font-size:8px;color:#666;">報告者</div><div style="font-weight:700;font-size:13px;">' + esc(staff) + '</div></div>';
-    pagesHtml += '<div style="padding:2.5mm 4mm;border-right:1px solid #999;text-align:center;flex:1.2;' + sampBg + '"><div style="font-size:8px;color:#555;">抜取有無</div><div style="font-weight:700;font-size:13px;">' + sampVal + '</div></div>';
-    pagesHtml += '<div style="padding:2.5mm 4mm;border-right:1px solid #999;text-align:center;flex:1.5;"><div style="font-size:8px;color:#666;">検質数計</div><div style="font-weight:700;font-size:11px;">' + totalInsp + ' ps</div></div>';
-    pagesHtml += '<div style="padding:2.5mm 4mm;border-right:1px solid #999;text-align:center;flex:1.5;"><div style="font-size:8px;color:#666;">対象数計</div><div style="font-weight:700;font-size:11px;">' + totalArrival.toLocaleString() + ' ps</div></div>';
-    pagesHtml += '<div style="padding:2.5mm 4mm;text-align:center;flex:1.5;"><div style="font-size:8px;color:#666;">検質率</div><div style="font-weight:700;font-size:11px;">' + inspRate + '%</div></div>';
+    pagesHtml += '<div style="padding:1.5mm 3mm;border-right:1px solid #999;flex:2;"><div style="font-size:8px;color:#000;">検質日</div><div style="font-weight:700;font-size:13px;">' + date + '</div></div>';
+    pagesHtml += '<div style="padding:1.5mm 3mm;border-right:1px solid #999;flex:2;"><div style="font-size:8px;color:#000;">報告者</div><div style="font-weight:700;font-size:13px;">' + esc(staff) + '</div></div>';
+    pagesHtml += '<div style="padding:2.5mm 4mm;border-right:1px solid #999;text-align:center;flex:1.2;' + sampBg + '"><div style="font-size:8px;color:#000;">抜取有無</div><div style="font-weight:700;font-size:13px;">' + sampVal + '</div></div>';
+    pagesHtml += '<div style="padding:2.5mm 4mm;border-right:1px solid #999;text-align:center;flex:1.5;"><div style="font-size:8px;color:#000;">検質数計</div><div style="font-weight:700;font-size:11px;">' + totalInsp + ' ps</div></div>';
+    pagesHtml += '<div style="padding:2.5mm 4mm;border-right:1px solid #999;text-align:center;flex:1.5;"><div style="font-size:8px;color:#000;">対象数計</div><div style="font-weight:700;font-size:11px;">' + totalArrival.toLocaleString() + ' ps</div></div>';
+    pagesHtml += '<div style="padding:2.5mm 4mm;text-align:center;flex:1.5;"><div style="font-size:8px;color:#000;">検質率</div><div style="font-weight:700;font-size:11px;">' + inspRate + '%</div></div>';
     pagesHtml += '</div>';
 
     // 品目カード2×2
     pagesHtml += '<div style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:4mm;flex:1;">' + itemsHtml + '</div>';
 
     // フッター
-    pagesHtml += '<div style="margin-top:3mm;border-top:1px solid #ccc;padding-top:2mm;display:flex;justify-content:space-between;font-size:8px;color:#666;">';
+    pagesHtml += '<div style="margin-top:3mm;border-top:1px solid #ccc;padding-top:2mm;display:flex;justify-content:space-between;font-size:8px;color:#000;">';
     pagesHtml += '<span>' + esc(center) + '農産センター　TEL: ' + tel + '　FAX: ' + fax + '</span>';
     pagesHtml += '<span>' + (pi+1) + ' / ' + totalPages + '</span>';
     pagesHtml += '</div>';
@@ -139,13 +139,13 @@ function _buildPdfFullHtml(center, date, staff, sampling, items, doPrint) {
   var defectItems = items.filter(function(it) { return Number(it.defectQty) > 0; });
   if (defectItems.length > 0) {
     pagesHtml += '<div class="pdf-page">';
-    pagesHtml += '<div style="text-align:center;font-size:17px;font-weight:700;letter-spacing:2px;margin-bottom:3mm;">【まいばすけっと検質不良レポート】</div>';
+    pagesHtml += '<div style="text-align:center;font-size:17px;font-weight:700;letter-spacing:2px;margin-bottom:3mm;color:#000;">【まいばすけっと検質不良レポート】</div>';
     pagesHtml += '<div style="font-size:11px;font-weight:700;margin-bottom:4mm;">まいばすけっと株式会社　御中</div>';
 
     pagesHtml += '<div style="display:flex;border:1px solid #999;margin-bottom:5mm;">';
-    pagesHtml += '<div style="padding:2mm 4mm;border-right:1px solid #999;flex:1.5;"><div style="font-size:8px;color:#666;">検質日</div><div style="font-weight:700;font-size:13px;">' + date + '</div></div>';
-    pagesHtml += '<div style="padding:2mm 4mm;border-right:1px solid #999;flex:1.5;"><div style="font-size:8px;color:#666;">センター</div><div style="font-weight:700;font-size:13px;">' + esc(center) + '農産センター</div></div>';
-    pagesHtml += '<div style="padding:2mm 4mm;flex:1.5;"><div style="font-size:8px;color:#666;">報告者</div><div style="font-weight:700;font-size:13px;">' + esc(staff) + '</div></div>';
+    pagesHtml += '<div style="padding:2mm 4mm;border-right:1px solid #999;flex:1.5;"><div style="font-size:8px;color:#000;">検質日</div><div style="font-weight:700;font-size:13px;">' + date + '</div></div>';
+    pagesHtml += '<div style="padding:2mm 4mm;border-right:1px solid #999;flex:1.5;"><div style="font-size:8px;color:#000;">センター</div><div style="font-weight:700;font-size:13px;">' + esc(center) + '農産センター</div></div>';
+    pagesHtml += '<div style="padding:2mm 4mm;flex:1.5;"><div style="font-size:8px;color:#000;">報告者</div><div style="font-weight:700;font-size:13px;">' + esc(staff) + '</div></div>';
     pagesHtml += '</div>';
 
     defectItems.forEach(function(item) {
@@ -163,15 +163,15 @@ function _buildPdfFullHtml(center, date, staff, sampling, items, doPrint) {
       // 左：情報
       pagesHtml += '<div style="flex:1;">';
       pagesHtml += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:2mm;margin-bottom:2mm;font-size:9px;">';
-      pagesHtml += '<div><span style="color:#666;font-size:7.5px;">仕入先</span><br><b>' + esc(item.supplier || '-') + '</b></div>';
-      pagesHtml += '<div><span style="color:#666;font-size:7.5px;">産地</span><br><b>' + esc(item.origin || '-') + '</b></div>';
-      pagesHtml += '<div><span style="color:#666;font-size:7.5px;">入荷数</span><br><b>' + aq + ' ps</b></div>';
-      pagesHtml += '<div><span style="color:#666;font-size:7.5px;">検質数</span><br><b>' + iq + ' ps</b></div>';
-      pagesHtml += '<div><span style="color:#666;font-size:7.5px;">不良数</span><br><b style="color:#c0392b;">' + dq + ' ps</b></div>';
-      pagesHtml += '<div><span style="color:#666;font-size:7.5px;">不良率</span><br><b style="color:#c0392b;">' + rate + '%</b></div>';
+      pagesHtml += '<div><span style="color:#000;font-size:7.5px;">仕入先</span><br><b>' + esc(item.supplier || '-') + '</b></div>';
+      pagesHtml += '<div><span style="color:#000;font-size:7.5px;">産地</span><br><b>' + esc(item.origin || '-') + '</b></div>';
+      pagesHtml += '<div><span style="color:#000;font-size:7.5px;">入荷数</span><br><b>' + aq + ' ps</b></div>';
+      pagesHtml += '<div><span style="color:#000;font-size:7.5px;">検質数</span><br><b>' + iq + ' ps</b></div>';
+      pagesHtml += '<div><span style="color:#000;font-size:7.5px;">不良数</span><br><b style="color:#c0392b;">' + dq + ' ps</b></div>';
+      pagesHtml += '<div><span style="color:#000;font-size:7.5px;">不良率</span><br><b style="color:#c0392b;">' + rate + '%</b></div>';
       pagesHtml += '</div>';
       if (reason) pagesHtml += '<div style="background:#fff5f5;border-radius:3px;padding:2mm;font-size:9px;margin-bottom:2mm;"><b>不良理由:</b> ' + esc(reason) + '</div>';
-      pagesHtml += '<div style="font-size:9px;color:#555;">コメント: ' + esc(item.comment || '') + '</div>';
+      pagesHtml += '<div style="font-size:9px;color:#000;">コメント: ' + esc(item.comment || '') + '</div>';
       pagesHtml += '</div>';
 
       // 右：不良写真
@@ -188,7 +188,7 @@ function _buildPdfFullHtml(center, date, staff, sampling, items, doPrint) {
       pagesHtml += '</div></div>';
     });
 
-    pagesHtml += '<div style="margin-top:auto;border-top:1px solid #ccc;padding-top:2mm;display:flex;justify-content:space-between;font-size:8px;color:#666;">';
+    pagesHtml += '<div style="margin-top:auto;border-top:1px solid #ccc;padding-top:2mm;display:flex;justify-content:space-between;font-size:8px;color:#000;">';
     pagesHtml += '<span>' + esc(center) + '農産センター　TEL: ' + tel + '　FAX: ' + fax + '</span>';
     pagesHtml += '</div>';
     pagesHtml += '</div>';

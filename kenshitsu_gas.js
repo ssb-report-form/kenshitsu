@@ -554,7 +554,7 @@ function handleSavePdfHtml(data) {
   if (!folderId) return error("センター「" + center + "」のPDF保存先フォルダが未設定です");
 
   try {
-    var blob = HtmlService.createHtmlOutput(html).getBlob().setName(fileName);
+    var blob = HtmlService.createHtmlOutput(html).getBlob().getAs('application/pdf').setName(fileName);
     var folder = DriveApp.getFolderById(folderId);
     var file = folder.createFile(blob);
     return ok({ saved: true, fileId: file.getId(), fileName: file.getName(), fileUrl: file.getUrl() });
