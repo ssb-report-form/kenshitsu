@@ -209,7 +209,7 @@ function _buildPdfFullHtml(center, date, staff, sampling, items, doPrint) {
     '</style></head><body>' +
     pagesHtml +
     '<div style="position:fixed;top:10px;right:10px;z-index:9999;display:flex;gap:8px">' +
-    '<button onclick="window.print()" style="padding:10px 20px;background:#1a5c2e;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">🖨 印刷 / PDF保存</button>' +
+    '<button onclick="window.print()" style="padding:10px 20px;background:#1a5c2e;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">🖨 印刷</button>' +
     '<button onclick="window.close()" style="padding:10px 16px;background:#fff;color:#333;border:1px solid #ddd;border-radius:8px;font-size:14px;cursor:pointer;font-family:inherit">✕ 閉じる</button>' +
     '</div>' +
     '<style>@media print{div[style*="position:fixed"]{display:none!important}}<\/style>' +
