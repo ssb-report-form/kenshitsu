@@ -612,16 +612,16 @@ textarea.form-input{resize:vertical;min-height:80px}
     <!-- 検質画像 -->
     <div class="sec-h">検質画像 <span style="color:var(--red);font-size:8px">2枚必須</span></div>
     <div class="card">
-      <div class="photo-area" id="inspPhotoArea">
-        <label class="photo-thumb" id="inspPhotoAdd1">
-          <div style="text-align:center"><div style="font-size:20px">📷</div><div style="font-size:8px;color:var(--tx3)">1枚目</div></div>
-          <input type="file" accept="image/*" style="display:none" onchange="addInspPhoto(event,0)">
-        </label>
-        <label class="photo-thumb" id="inspPhotoAdd2">
-          <div style="text-align:center"><div style="font-size:20px">📷</div><div style="font-size:8px;color:var(--tx3)">2枚目</div></div>
-          <input type="file" accept="image/*" style="display:none" onchange="addInspPhoto(event,1)">
-        </label>
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <div id="inspThumb0" style="flex:1;height:80px;border:1px dashed var(--bdr);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--tx3);overflow:hidden;position:relative">1枚目</div>
+        <div id="inspThumb1" style="flex:1;height:80px;border:1px dashed var(--bdr);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--tx3);overflow:hidden;position:relative">2枚目</div>
       </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button type="button" class="btn btn-outline" style="flex:1;font-size:11px;padding:7px" onclick="triggerPhoto('insp','camera')">📷 撮影</button>
+        <button type="button" class="btn btn-outline" style="flex:1;font-size:11px;padding:7px" onclick="triggerPhoto('insp','album')">🖼 アルバム</button>
+      </div>
+      <input type="file" id="inspCameraInput" accept="image/*" capture="environment" style="display:none">
+      <input type="file" id="inspAlbumInput" accept="image/*" style="display:none">
     </div>
 
     <!-- 不良入力 -->
@@ -659,16 +659,16 @@ textarea.form-input{resize:vertical;min-height:80px}
       <div class="sec-h">不良画像（最大2枚・任意）</div>
       <div class="card" style="border-color:rgba(224,85,101,.2)">
         <div style="font-size:10px;color:var(--tx3);margin-bottom:8px">欠品等の理由で画像がない場合は添付不要です</div>
-        <div class="photo-area" id="defectPhotoArea">
-          <label class="photo-thumb" id="defectPhotoAdd1">
-            <div style="text-align:center"><div style="font-size:20px">📷</div><div style="font-size:8px;color:var(--red)">不良1</div></div>
-            <input type="file" accept="image/*" style="display:none" onchange="addDefectPhoto(event,0)">
-          </label>
-          <label class="photo-thumb" id="defectPhotoAdd2">
-            <div style="text-align:center"><div style="font-size:20px">📷</div><div style="font-size:8px;color:var(--red)">不良2</div></div>
-            <input type="file" accept="image/*" style="display:none" onchange="addDefectPhoto(event,1)">
-          </label>
+        <div style="display:flex;gap:8px;margin-bottom:8px">
+          <div id="defectThumb0" style="flex:1;height:80px;border:1px dashed rgba(224,85,101,.3);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--red);overflow:hidden;position:relative">不良1</div>
+          <div id="defectThumb1" style="flex:1;height:80px;border:1px dashed rgba(224,85,101,.3);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--red);overflow:hidden;position:relative">不良2</div>
         </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button type="button" class="btn btn-outline" style="flex:1;font-size:11px;padding:7px;color:var(--red);border-color:rgba(224,85,101,.3)" onclick="triggerPhoto('defect','camera')">📷 撮影</button>
+          <button type="button" class="btn btn-outline" style="flex:1;font-size:11px;padding:7px;color:var(--red);border-color:rgba(224,85,101,.3)" onclick="triggerPhoto('defect','album')">🖼 アルバム</button>
+        </div>
+        <input type="file" id="defectCameraInput" accept="image/*" capture="environment" style="display:none">
+        <input type="file" id="defectAlbumInput" accept="image/*" style="display:none">
       </div>
     </div>
 
@@ -1133,37 +1133,12 @@ function openInspection(idx) {
   document.getElementById('defectFields').classList.toggle('hidden', dq <= 0);
 
   // 検質画像の表示復元
-  restorePhotoThumbs('inspPhotoAdd1', (it.inspPhotos||[])[0]);
-  restorePhotoThumbs('inspPhotoAdd2', (it.inspPhotos||[])[1]);
-  restorePhotoThumbs('defectPhotoAdd1', (it.defectPhotos||[])[0]);
-  restorePhotoThumbs('defectPhotoAdd2', (it.defectPhotos||[])[1]);
+  renderPhotoThumbs('insp', it);
+  renderPhotoThumbs('defect', it);
 
   document.getElementById('inspModal').classList.add('on');
 }
 
-function restorePhotoThumbs(labelId, dataUrl) {
-  var label = document.getElementById(labelId);
-  if (!label) return;
-  if (dataUrl) {
-    label.innerHTML = '<img src="'+dataUrl+'" style="width:100%;height:100%;object-fit:cover;border-radius:8px">'
-      + '<input type="file" accept="image/*" style="display:none" onchange="'+label.querySelector('input')?.getAttribute('onchange')+'">';
-    // Re-attach input
-    var origOnchange = labelId.indexOf('insp') >= 0
-      ? (labelId.indexOf('1') >= 0 ? 'addInspPhoto(event,0)' : 'addInspPhoto(event,1)')
-      : (labelId.indexOf('1') >= 0 ? 'addDefectPhoto(event,0)' : 'addDefectPhoto(event,1)');
-    label.innerHTML = '<img src="'+dataUrl+'" style="width:100%;height:100%;object-fit:cover;border-radius:8px">'
-      + '<input type="file" accept="image/*" style="display:none" onchange="'+origOnchange+'">';
-  } else {
-    var isDefect = labelId.indexOf('defect') >= 0;
-    var num = labelId.indexOf('1') >= 0 ? '1' : '2';
-    var origOnchange = isDefect ? 'addDefectPhoto(event,'+(num-1)+')' : 'addInspPhoto(event,'+(num-1)+')';
-    var icon = isDefect ? '📷' : '📷';
-    var sublabel = isDefect ? '不良'+num : num+'枚目';
-    var color = isDefect ? 'var(--red)' : 'var(--tx3)';
-    label.innerHTML = '<div style="text-align:center"><div style="font-size:20px">'+icon+'</div><div style="font-size:8px;color:'+color+'">'+sublabel+'</div></div>'
-      + '<input type="file" accept="image/*" style="display:none" onchange="'+origOnchange+'">';
-  }
-}
 
 function calcInspQty() {
   var arr = Number(document.getElementById('modalArrival').value) || 0;
@@ -1264,37 +1239,65 @@ function resizeImage(dataUrl, callback) {
   img.src = dataUrl;
 }
 
-function addInspPhoto(ev, idx) {
-  var file = ev.target.files[0]; if (!file) return;
-  var reader = new FileReader();
-  reader.onload = function(e) {
-    resizeImage(e.target.result, function(resized) {
-      var it = state.items[state.currentItem];
-      if (!it.inspPhotos) it.inspPhotos = [];
-      it.inspPhotos[idx] = resized;
-      var labelId = idx === 0 ? 'inspPhotoAdd1' : 'inspPhotoAdd2';
-      restorePhotoThumbs(labelId, resized);
-    });
+// 撮影/アルバム選択トリガー
+function triggerPhoto(type, mode) {
+  var inputId = type + (mode === 'camera' ? 'CameraInput' : 'AlbumInput');
+  var input = document.getElementById(inputId);
+  if (!input) return;
+  input.onchange = function() {
+    var file = this.files[0]; if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      resizeImage(e.target.result, function(resized) {
+        var it = state.items[state.currentItem];
+        var key = type === 'insp' ? 'inspPhotos' : 'defectPhotos';
+        if (!it[key]) it[key] = [];
+        // 空きスロットに追加
+        var idx = !it[key][0] ? 0 : (!it[key][1] ? 1 : -1);
+        if (idx === -1) { toast('既に2枚添付済みです。削除してから追加してください','error'); return; }
+        it[key][idx] = resized;
+        renderPhotoThumbs(type, it);
+      });
+    };
+    reader.readAsDataURL(file);
+    this.value = '';
   };
-  reader.readAsDataURL(file);
-  ev.target.value = '';
+  input.click();
 }
 
-// 不良画像添付
-function addDefectPhoto(ev, idx) {
-  var file = ev.target.files[0]; if (!file) return;
-  var reader = new FileReader();
-  reader.onload = function(e) {
-    resizeImage(e.target.result, function(resized) {
-      var it = state.items[state.currentItem];
-      if (!it.defectPhotos) it.defectPhotos = [];
-      it.defectPhotos[idx] = resized;
-      var labelId = idx === 0 ? 'defectPhotoAdd1' : 'defectPhotoAdd2';
-      restorePhotoThumbs(labelId, resized);
-    });
-  };
-  reader.readAsDataURL(file);
-  ev.target.value = '';
+// サムネイル描画（削除ボタン付き）
+function renderPhotoThumbs(type, it) {
+  var key = type === 'insp' ? 'inspPhotos' : 'defectPhotos';
+  var photos = it[key] || [];
+  for (var i = 0; i < 2; i++) {
+    var el = document.getElementById(type + 'Thumb' + i);
+    if (!el) continue;
+    if (photos[i]) {
+      el.innerHTML = '<img src="' + photos[i] + '" style="width:100%;height:100%;object-fit:cover">'
+        + '<button onclick="deletePhoto(\'' + type + '\',' + i + ')" style="position:absolute;top:3px;right:3px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:22px;height:22px;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center">✕</button>';
+      el.style.border = '1px solid var(--bdr)';
+    } else {
+      var label = type === 'insp' ? ((i+1) + '枚目') : ('不良' + (i+1));
+      var color = type === 'insp' ? 'var(--tx3)' : 'var(--red)';
+      var borderStyle = type === 'insp' ? '1px dashed var(--bdr)' : '1px dashed rgba(224,85,101,.3)';
+      el.innerHTML = label;
+      el.style.border = borderStyle;
+      el.style.color = color;
+    }
+  }
+}
+
+// 画像削除
+function deletePhoto(type, idx) {
+  var it = state.items[state.currentItem];
+  var key = type === 'insp' ? 'inspPhotos' : 'defectPhotos';
+  if (it[key]) {
+    it[key][idx] = null;
+    it[key] = it[key].filter(function(p) { return p; });
+    while (it[key].length < 2) it[key].push(null);
+  }
+  renderPhotoThumbs(type, it);
+  toast('画像を削除しました','success');
 }
 
 // 途中保存
