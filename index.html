@@ -586,7 +586,7 @@ textarea.form-input{resize:vertical;min-height:80px}
     <div class="sec-h">産地</div>
     <div class="card">
       <div class="form-group" style="margin-bottom:4px">
-        <label class="form-label">産地 <span style="color:var(--red);font-size:8px">入力</span></label>
+        <label class="form-label">産地 <span style="color:var(--red);font-size:8px">必須</span></label>
         <input type="text" class="form-input" id="modalOrigin" placeholder="産地を入力">
       </div>
       <div id="originHint" style="font-size:10px;color:var(--tx2);padding:0 2px 4px">参考産地: --</div>
@@ -1049,13 +1049,19 @@ function renderItems() {
     if (done && dq > 0) badge = '<div class="item-btn fail">✗</div>';
     else if (done) badge = '<div class="item-btn pass">✓</div>';
     else badge = '<div class="item-btn">−</div>';
-    return '<div class="item-row" onclick="openInspection('+i+')">'
+    return '<div class="item-row" style="position:relative">'
+      + '<div style="flex:1;display:flex;align-items:center;gap:10px;cursor:pointer" onclick="openInspection('+i+')">'
       + '<div class="item-num">'+(i+1)+'</div>'
       + '<div class="item-body">'
       + '<div class="item-name">'+it.name+'</div>'
       + '<div class="item-meta">'+(it.origin || '<span style="color:var(--amb)">産地未入力</span>')+' / '+it.supplier+'</div>'
       + '</div>'
       + badge
+      + '</div>'
+      + '<div style="display:flex;gap:4px;flex-shrink:0;margin-left:6px">'
+      + '<button onclick="copyItem('+i+')" style="background:var(--bbg);color:var(--blu);border:none;border-radius:6px;padding:4px 7px;font-size:11px;cursor:pointer" title="コピー">📋</button>'
+      + '<button onclick="deleteItem('+i+')" style="background:var(--rbg);color:var(--red);border:none;border-radius:6px;padding:4px 7px;font-size:11px;cursor:pointer" title="削除">✕</button>'
+      + '</div>'
       + '</div>';
   }).join('');
 
@@ -1066,6 +1072,31 @@ function renderItems() {
   document.getElementById('failCount').innerHTML = fail + '<span class="kc-u">件</span>';
   document.getElementById('inspSub').textContent =
     state.center + 'センター — ' + state.items.length + '品目中 ' + done + '件検査済';
+}
+
+function copyItem(idx) {
+  var orig = state.items[idx];
+  var copy = {
+    name: orig.name, origin: '', originRef: orig.originRef || '', supplier: orig.supplier,
+    code: orig.code || '', unit: orig.unit || '',
+    arrivalQty: 0, inspQty: 0, defectQty: 0, defectRate: 0,
+    defectReason: '', defectReasonText: '', comment: '',
+    inspPhotos: [], defectPhotos: [], idx: 0
+  };
+  state.items.splice(idx + 1, 0, copy);
+  // idx振り直し
+  state.items.forEach(function(it, i) { it.idx = i; });
+  renderItems();
+  toast('📋 ' + orig.name + ' をコピーしました', 'success');
+}
+
+function deleteItem(idx) {
+  var name = state.items[idx].name;
+  if (!confirm(name + ' を削除しますか？')) return;
+  state.items.splice(idx, 1);
+  state.items.forEach(function(it, i) { it.idx = i; });
+  renderItems();
+  toast(name + ' を削除しました', 'success');
 }
 
 function openInspection(idx) {
@@ -1167,6 +1198,8 @@ function saveInspection() {
   var defectQty = Number(document.getElementById('modalDefectQty').value) || 0;
 
   // バリデーション
+  var originVal = document.getElementById('modalOrigin').value.trim();
+  if (!originVal) { toast('産地を入力してください','error'); document.getElementById('modalOrigin').focus(); return; }
   if (!arrival) { toast('入荷数を入力してください','error'); return; }
   if ((it.inspPhotos || []).length < 2) { toast('検質画像を2枚添付してください','error'); return; }
   if (defectQty > 0) {
