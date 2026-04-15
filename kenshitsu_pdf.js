@@ -54,7 +54,7 @@ function _buildPdfFullHtml(center, date, staff, sampling, items, doPrint) {
     if (reason === 'その他（手入力）' && item.defectReasonText) reason = 'その他: ' + item.defectReasonText;
 
     // 検質写真（高さ固定で縦長画像もはみ出さない）
-    var photoH = '30mm';
+    var photoH = '28mm';
     var photosHtml = '';
     var ip = item.inspPhotos || [];
     for (var p = 0; p < 2; p++) {

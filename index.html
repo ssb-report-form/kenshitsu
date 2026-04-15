@@ -1202,15 +1202,46 @@ function closeModal() {
 }
 
 // 検質画像添付
+// 画像リサイズ（横長4:3に収め、最大800px幅、JPEG圧縮）
+function resizeImage(dataUrl, callback) {
+  var img = new Image();
+  img.onload = function() {
+    var maxW = 800, maxH = 600;
+    var w = img.width, h = img.height;
+
+    // 縦長すぎる場合は上部をクロップ（4:3比率に）
+    var srcX = 0, srcY = 0, srcW = w, srcH = h;
+    if (h > w * 1.5) {
+      srcH = Math.floor(w * 0.75);
+      srcY = 0; // 上部を使用
+    }
+
+    // リサイズ
+    var scale = Math.min(maxW / srcW, maxH / srcH, 1);
+    var dw = Math.floor(srcW * scale);
+    var dh = Math.floor(srcH * scale);
+
+    var canvas = document.createElement('canvas');
+    canvas.width = dw;
+    canvas.height = dh;
+    var ctx = canvas.getContext('2d');
+    ctx.drawImage(img, srcX, srcY, srcW, srcH, 0, 0, dw, dh);
+    callback(canvas.toDataURL('image/jpeg', 0.8));
+  };
+  img.src = dataUrl;
+}
+
 function addInspPhoto(ev, idx) {
   var file = ev.target.files[0]; if (!file) return;
   var reader = new FileReader();
   reader.onload = function(e) {
-    var it = state.items[state.currentItem];
-    if (!it.inspPhotos) it.inspPhotos = [];
-    it.inspPhotos[idx] = e.target.result;
-    var labelId = idx === 0 ? 'inspPhotoAdd1' : 'inspPhotoAdd2';
-    restorePhotoThumbs(labelId, e.target.result);
+    resizeImage(e.target.result, function(resized) {
+      var it = state.items[state.currentItem];
+      if (!it.inspPhotos) it.inspPhotos = [];
+      it.inspPhotos[idx] = resized;
+      var labelId = idx === 0 ? 'inspPhotoAdd1' : 'inspPhotoAdd2';
+      restorePhotoThumbs(labelId, resized);
+    });
   };
   reader.readAsDataURL(file);
   ev.target.value = '';
@@ -1221,11 +1252,13 @@ function addDefectPhoto(ev, idx) {
   var file = ev.target.files[0]; if (!file) return;
   var reader = new FileReader();
   reader.onload = function(e) {
-    var it = state.items[state.currentItem];
-    if (!it.defectPhotos) it.defectPhotos = [];
-    it.defectPhotos[idx] = e.target.result;
-    var labelId = idx === 0 ? 'defectPhotoAdd1' : 'defectPhotoAdd2';
-    restorePhotoThumbs(labelId, e.target.result);
+    resizeImage(e.target.result, function(resized) {
+      var it = state.items[state.currentItem];
+      if (!it.defectPhotos) it.defectPhotos = [];
+      it.defectPhotos[idx] = resized;
+      var labelId = idx === 0 ? 'defectPhotoAdd1' : 'defectPhotoAdd2';
+      restorePhotoThumbs(labelId, resized);
+    });
   };
   reader.readAsDataURL(file);
   ev.target.value = '';
