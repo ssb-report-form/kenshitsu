@@ -216,13 +216,10 @@ function _buildPdfFullHtml(center, date, staff, sampling, items, doPrint) {
     '</body></html>';
 
   if (doPrint) {
-    // 印刷ウィンドウ
+    // 印刷ウィンドウのみ（Drive保存はしない）
     var win = window.open('', '_blank');
     win.document.write(fullHtml);
     win.document.close();
-
-    // GASにHTML送信→Drive保存（バックグラウンド）
-    savePdfToDrive(center, fileName, fullHtml);
 
     return fileName;
   }
