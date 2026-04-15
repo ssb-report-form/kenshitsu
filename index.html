@@ -1321,7 +1321,7 @@ function buildConfirm() {
   }
 }
 
-function buildPdfPreview(pass, fail, defects) {
+function buildPdfPreview() {
   if (typeof generatePdfHtml !== 'function') {
     document.getElementById('pdfPreview').innerHTML = '<div style="padding:20px;text-align:center;color:#999">PDF生成機能が読み込まれていません</div>';
     return;
@@ -1330,31 +1330,34 @@ function buildPdfPreview(pass, fail, defects) {
   var staff = document.getElementById('staffSelect').value || '--';
   var pdfHtml = generatePdfHtml(state.center, date, staff, '', state.items);
 
-  // スマホ対応：A4(210mm)を画面幅に縮小して表示
-  var containerWidth = document.getElementById('pdfPreview').offsetWidth || 350;
-  var a4Width = 794; // 210mm ≒ 794px
-  var scale = Math.min(containerWidth / a4Width, 1);
-
-  var html = '<div style="overflow:hidden;background:#888;padding:8px;border-radius:8px">';
-  html += '<div style="transform:scale(' + scale + ');transform-origin:top left;width:' + a4Width + 'px">';
-  html += '<div style="background:#fff;font-family:Hiragino Sans,Meiryo,sans-serif;">';
-
-  // PDFのstyleとbodyだけ抽出して埋め込む
-  var bodyMatch = pdfHtml.match(/<style>([\s\S]*?)<\/style>/);
-  var bodyContent = pdfHtml.match(/<body>([\s\S]*?)<\/body>/);
-  if (bodyMatch) html += '<style>' + bodyMatch[1] + '</style>';
-  if (bodyContent) html += bodyContent[1];
-  else html += pdfHtml;
-
-  html += '</div></div></div>';
-
-  // 高さを計算（ページ数に応じて）
+  // iframeで完全に隔離（CSSがアプリに漏れない）
   var pageCount = Math.max(1, Math.ceil(state.items.length / 4));
   if (state.items.some(function(i) { return Number(i.defectQty) > 0; })) pageCount++;
-  var scaledHeight = Math.ceil(1123 * pageCount * scale) + 20; // A4 height ≒ 1123px
-  html = '<div style="height:' + scaledHeight + 'px;overflow:hidden">' + html + '</div>';
+  var iframeHeight = Math.min(pageCount * 400, 600);
 
-  document.getElementById('pdfPreview').innerHTML = html;
+  var el = document.getElementById('pdfPreview');
+  el.innerHTML = '<iframe id="pdfPreviewFrame" style="width:100%;height:' + iframeHeight + 'px;border:none;background:#fff;border-radius:8px" sandbox="allow-same-origin"></iframe>';
+
+  var iframe = document.getElementById('pdfPreviewFrame');
+  var iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+  iframeDoc.open();
+  iframeDoc.write(pdfHtml);
+  iframeDoc.close();
+
+  // iframe内のコンテンツをスマホ幅に縮小
+  setTimeout(function() {
+    try {
+      var body = iframeDoc.body;
+      if (!body) return;
+      var containerWidth = el.offsetWidth - 4;
+      var contentWidth = 794;
+      var scale = Math.min(containerWidth / contentWidth, 1);
+      body.style.transformOrigin = 'top left';
+      body.style.transform = 'scale(' + scale + ')';
+      body.style.width = contentWidth + 'px';
+      iframe.style.height = Math.ceil(body.scrollHeight * scale + 20) + 'px';
+    } catch(e) {}
+  }, 100);
 }
 
 async function savePdf() {
