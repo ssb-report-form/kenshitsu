@@ -1330,34 +1330,14 @@ function buildPdfPreview() {
   var staff = document.getElementById('staffSelect').value || '--';
   var pdfHtml = generatePdfHtml(state.center, date, staff, '', state.items);
 
-  // iframeで完全に隔離（CSSがアプリに漏れない）
+  // srcdoc iframeで完全隔離（親CSSに絶対影響しない）
   var pageCount = Math.max(1, Math.ceil(state.items.length / 4));
   if (state.items.some(function(i) { return Number(i.defectQty) > 0; })) pageCount++;
   var iframeHeight = Math.min(pageCount * 400, 600);
 
   var el = document.getElementById('pdfPreview');
-  el.innerHTML = '<iframe id="pdfPreviewFrame" style="width:100%;height:' + iframeHeight + 'px;border:none;background:#fff;border-radius:8px" sandbox="allow-same-origin"></iframe>';
-
-  var iframe = document.getElementById('pdfPreviewFrame');
-  var iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-  iframeDoc.open();
-  iframeDoc.write(pdfHtml);
-  iframeDoc.close();
-
-  // iframe内のコンテンツをスマホ幅に縮小
-  setTimeout(function() {
-    try {
-      var body = iframeDoc.body;
-      if (!body) return;
-      var containerWidth = el.offsetWidth - 4;
-      var contentWidth = 794;
-      var scale = Math.min(containerWidth / contentWidth, 1);
-      body.style.transformOrigin = 'top left';
-      body.style.transform = 'scale(' + scale + ')';
-      body.style.width = contentWidth + 'px';
-      iframe.style.height = Math.ceil(body.scrollHeight * scale + 20) + 'px';
-    } catch(e) {}
-  }, 100);
+  var escaped = pdfHtml.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+  el.innerHTML = '<iframe srcdoc="' + escaped + '" style="width:100%;height:' + iframeHeight + 'px;border:none;background:#fff;border-radius:8px"></iframe>';
 }
 
 async function savePdf() {
