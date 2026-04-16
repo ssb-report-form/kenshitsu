@@ -84,6 +84,8 @@ function _buildPdfFullHtml(center, date, staff, sampling, items, doPrint) {
     h += '</div>';
     if (isNG && reason) {
       h += '<div style="background:#fff5f5;border-radius:2px;padding:1.5mm 2mm;border-left:3px solid #c0392b;font-size:8px;margin-bottom:1.5mm;"><b>不良理由:</b> ' + esc(reason) + '</div>';
+    } else {
+      h += '<div style="padding:1.5mm 2mm;font-size:8px;margin-bottom:1.5mm;">&nbsp;</div>';
     }
     h += '<div style="border-top:1px solid #eee;padding-top:1.5mm;margin-bottom:2mm;font-size:9px;' + (isNG ? 'background:#fff5f5;border-radius:2px;padding:1.5mm 2mm;border-top:none;' : '') + '"><span style="color:#000;">コメント</span>　' + esc(item.comment || '') + '</div>';
     h += '<div style="display:flex;gap:2mm;height:48mm;overflow:hidden;">' + photosHtml + '</div>';
