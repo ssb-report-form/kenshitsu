@@ -67,7 +67,7 @@ function _buildPdfFullHtml(center, date, staff, sampling, items, doPrint) {
 
     var h = '<div style="border-radius:4px;overflow:hidden;border:1.5px solid ' + bc + ';display:flex;flex-direction:column;">';
     // ヘッダー
-    h += '<div style="background:' + bc + ';color:#fff;padding:2mm 3mm;font-size:12px;font-weight:700;">' + esc(item.name);
+    h += '<div style="background:' + bc + ';color:#fff;padding:1mm 3mm;font-size:12px;font-weight:700;">' + esc(item.name);
     if (isNG) h += '　<span style="font-size:9px">⚠ 不良あり</span>';
     h += '</div>';
     // ボディ
