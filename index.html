@@ -1218,17 +1218,24 @@ function closeModal() {
 function resizeImage(dataUrl, callback) {
   var img = new Image();
   img.onload = function() {
-    var maxW = 800, maxH = 600;
     var w = img.width, h = img.height;
-
-    // 縦長すぎる場合は上部をクロップ（4:3比率に）
+    // PDF枠比率 4:3（横長）に中央クロップ
+    var targetRatio = 4 / 3;
     var srcX = 0, srcY = 0, srcW = w, srcH = h;
-    if (h > w * 1.5) {
-      srcH = Math.floor(w * 0.75);
-      srcY = 0; // 上部を使用
+    var currentRatio = w / h;
+
+    if (currentRatio < targetRatio) {
+      // 縦長 → 上下を中央クロップ
+      srcH = Math.floor(w / targetRatio);
+      srcY = Math.floor((h - srcH) / 2);
+    } else if (currentRatio > targetRatio) {
+      // 横長すぎ → 左右を中央クロップ
+      srcW = Math.floor(h * targetRatio);
+      srcX = Math.floor((w - srcW) / 2);
     }
 
-    // リサイズ
+    // 最大800x600にリサイズ
+    var maxW = 800, maxH = 600;
     var scale = Math.min(maxW / srcW, maxH / srcH, 1);
     var dw = Math.floor(srcW * scale);
     var dh = Math.floor(srcH * scale);
@@ -1238,7 +1245,7 @@ function resizeImage(dataUrl, callback) {
     canvas.height = dh;
     var ctx = canvas.getContext('2d');
     ctx.drawImage(img, srcX, srcY, srcW, srcH, 0, 0, dw, dh);
-    callback(canvas.toDataURL('image/jpeg', 0.8));
+    callback(canvas.toDataURL('image/jpeg', 0.85));
   };
   img.src = dataUrl;
 }

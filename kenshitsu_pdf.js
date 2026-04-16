@@ -59,7 +59,7 @@ function _buildPdfFullHtml(center, date, staff, sampling, items, doPrint) {
     var ip = item.inspPhotos || [];
     for (var p = 0; p < 2; p++) {
       if (ip[p]) {
-        photosHtml += '<div style="flex:1;height:' + photoH + ';border:1px solid #ccc;overflow:hidden;"><img src="' + ip[p] + '" style="width:100%;height:100%;object-fit:contain;display:block;background:#f9f9f9;"></div>';
+        photosHtml += '<div style="flex:1;height:' + photoH + ';border:1px solid #ccc;overflow:hidden;"><img src="' + ip[p] + '" style="width:100%;height:100%;object-fit:cover;display:block;"></div>';
       } else {
         photosHtml += '<div style="flex:1;height:' + photoH + ';border:1px dashed #ccc;display:flex;align-items:center;justify-content:center;font-size:8px;color:#aaa;">写真' + (p+1) + '</div>';
       }
@@ -189,7 +189,7 @@ function _buildPdfFullHtml(center, date, staff, sampling, items, doPrint) {
       var dp = item.defectPhotos || [];
       for (var p = 0; p < 2; p++) {
         if (dp[p]) {
-          pagesHtml += '<div style="flex:1;height:45mm;border:1px solid #ccc;border-radius:3px;overflow:hidden;"><img src="' + dp[p] + '" style="width:100%;height:100%;object-fit:contain;display:block;background:#f9f9f9;"></div>';
+          pagesHtml += '<div style="flex:1;height:45mm;border:1px solid #ccc;border-radius:3px;overflow:hidden;"><img src="' + dp[p] + '" style="width:100%;height:100%;object-fit:cover;display:block;"></div>';
         } else {
           pagesHtml += '<div style="flex:1;height:45mm;border:1px dashed #ccc;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:8px;color:#aaa;">写真' + (p+1) + '</div>';
         }
