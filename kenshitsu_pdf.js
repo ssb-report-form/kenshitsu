@@ -73,7 +73,9 @@ function _buildPdfFullHtml(center, date, staff, sampling, items, doPrint) {
     // ボディ
     h += '<div style="padding:1.5mm 3mm;font-size:9px;flex:1;display:flex;flex-direction:column;">';
     h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:2mm;margin-bottom:2mm;">';
-    h += '<div><span style="color:#000;font-size:9px;">仕入先</span><br><span style="font-size:10px;margin-top:1mm;display:inline-block">' + esc(item.supplier || '-') + '</span></div>';
+    var supLen = (item.supplier || '-').length;
+    var supSize = supLen > 15 ? '9px' : '10px';
+    h += '<div><span style="color:#000;font-size:9px;">仕入先</span><br><span style="font-size:' + supSize + ';margin-top:1mm;display:inline-block;white-space:nowrap">' + esc(item.supplier || '-') + '</span></div>';
     h += '<div><span style="color:#000;font-size:9px;">産地</span><br><span style="font-size:10px;margin-top:1mm;display:inline-block">' + esc(item.origin || '-') + '</span></div>';
     h += '<div><span style="color:#000;font-size:9px;">入荷数</span><br><b style="font-size:10px;margin-top:1mm;display:inline-block">' + aq + ' ps</b></div>';
     h += '<div><span style="color:#000;font-size:9px;">検質数</span><br><b style="font-size:10px;margin-top:1mm;display:inline-block">' + iq + ' ps</b></div>';
