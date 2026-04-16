@@ -54,7 +54,7 @@ function _buildPdfFullHtml(center, date, staff, sampling, items, doPrint) {
     if (reason === 'その他（手入力）' && item.defectReasonText) reason = 'その他: ' + item.defectReasonText;
 
     // 検質写真（高さ固定で縦長画像もはみ出さない）
-    var photoH = '48mm';
+    var photoH = '45mm';
     var photosHtml = '';
     var ip = item.inspPhotos || [];
     for (var p = 0; p < 2; p++) {
@@ -88,8 +88,8 @@ function _buildPdfFullHtml(center, date, staff, sampling, items, doPrint) {
     } else {
       h += '<div style="padding:1.5mm 2mm;font-size:8px;margin-bottom:1.5mm;">&nbsp;</div>';
     }
-    h += '<div style="border-top:1px solid #eee;padding-top:1.5mm;margin-bottom:2mm;font-size:9px;' + (isNG ? 'background:#fff5f5;border-radius:2px;padding:1.5mm 2mm;border-top:none;' : '') + '"><span style="color:#000;">コメント</span>　' + esc(item.comment || '') + '</div>';
-    h += '<div style="display:flex;gap:2mm;height:48mm;overflow:hidden;">' + photosHtml + '</div>';
+    h += '<div style="background:#f5f5f5;border-radius:2px;padding:1.5mm 2mm;margin-bottom:2mm;font-size:9px;"><span style="color:#000;">コメント</span>　' + esc(item.comment || '') + '</div>';
+    h += '<div style="display:flex;gap:2mm;height:45mm;overflow:hidden;">' + photosHtml + '</div>';
     h += '</div></div>';
     return h;
   }
@@ -189,9 +189,9 @@ function _buildPdfFullHtml(center, date, staff, sampling, items, doPrint) {
       var dp = item.defectPhotos || [];
       for (var p = 0; p < 2; p++) {
         if (dp[p]) {
-          pagesHtml += '<div style="flex:1;height:48mm;border:1px solid #ccc;border-radius:3px;overflow:hidden;"><img src="' + dp[p] + '" style="width:100%;height:100%;object-fit:contain;display:block;background:#f9f9f9;"></div>';
+          pagesHtml += '<div style="flex:1;height:45mm;border:1px solid #ccc;border-radius:3px;overflow:hidden;"><img src="' + dp[p] + '" style="width:100%;height:100%;object-fit:contain;display:block;background:#f9f9f9;"></div>';
         } else {
-          pagesHtml += '<div style="flex:1;height:48mm;border:1px dashed #ccc;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:8px;color:#aaa;">写真' + (p+1) + '</div>';
+          pagesHtml += '<div style="flex:1;height:45mm;border:1px dashed #ccc;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:8px;color:#aaa;">写真' + (p+1) + '</div>';
         }
       }
       pagesHtml += '</div>';
