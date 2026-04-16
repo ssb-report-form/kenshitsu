@@ -67,7 +67,7 @@ function _buildPdfFullHtml(center, date, staff, sampling, items, doPrint) {
 
     var h = '<div style="border-radius:4px;overflow:hidden;border:1.5px solid ' + bc + ';display:flex;flex-direction:column;">';
     // ヘッダー
-    h += '<div style="background:' + bc + ';color:#fff;padding:1.5mm 3mm;font-size:10px;font-weight:700;">' + esc(item.name);
+    h += '<div style="background:' + bc + ';color:#fff;padding:3mm 3mm;font-size:10px;font-weight:700;">' + esc(item.name);
     if (isNG) h += '　<span style="font-size:8px">⚠ 不良あり</span>';
     h += '</div>';
     // ボディ
@@ -103,26 +103,30 @@ function _buildPdfFullHtml(center, date, staff, sampling, items, doPrint) {
 
     pagesHtml += '<div class="pdf-page">';
     pagesHtml += '<div style="position:absolute;top:10mm;right:12mm;font-size:10px;">' + (pi+1) + '/' + totalPages + '</div>';
-    pagesHtml += '<div style="text-align:center;font-size:17px;font-weight:700;letter-spacing:2px;margin-bottom:3mm;color:#000;">【まいばすけっと検質報告書】</div>';
-    pagesHtml += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3mm;">';
-    pagesHtml += '<div style="font-size:11px;font-weight:700;">まいばすけっと株式会社　御中</div>';
-    pagesHtml += '<div style="font-size:11px;font-weight:700;">' + esc(center) + '農産センター</div>';
+
+    // タイトル
+    pagesHtml += '<div style="text-align:center;font-size:18px;font-weight:700;letter-spacing:2px;margin-bottom:5mm;color:#000;">【まいばすけっと検質報告書】</div>';
+
+    // 宛先 + センター名（同一行、左右）
+    pagesHtml += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4mm;">';
+    pagesHtml += '<div style="font-size:14px;font-weight:700;color:#000;">まいばすけっと株式会社　御中</div>';
+    pagesHtml += '<div style="font-size:13px;font-weight:700;color:#000;">' + esc(center) + '農産センター</div>';
     pagesHtml += '</div>';
 
     // 品目一覧（フル幅）
-    pagesHtml += '<div style="border:1px solid #999;padding:2mm 3mm;margin-bottom:3mm;">';
-    pagesHtml += '<div style="font-size:9px;font-weight:700;margin-bottom:1.5mm;">今週の検質品目</div>';
-    pagesHtml += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0 4mm;font-size:8px;line-height:1.6;">' + itemListHtml + '</div>';
+    pagesHtml += '<div style="border:1px solid #999;padding:2.5mm 3mm;margin-bottom:3mm;">';
+    pagesHtml += '<div style="font-size:11px;font-weight:700;margin-bottom:2mm;color:#000;">今週の検質品目</div>';
+    pagesHtml += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0 4mm;font-size:10px;line-height:1.7;color:#000;">' + itemListHtml + '</div>';
     pagesHtml += '</div>';
 
-    // サマリーバー
+    // サマリーバー（ラベル10px、値15px、値を下寄せ）
     pagesHtml += '<div style="display:flex;border:1px solid #999;margin-bottom:4mm;">';
-    pagesHtml += '<div style="padding:1.5mm 3mm;border-right:1px solid #999;flex:2;"><div style="font-size:8px;color:#000;">検質日</div><div style="font-weight:700;font-size:13px;">' + date + '</div></div>';
-    pagesHtml += '<div style="padding:1.5mm 3mm;border-right:1px solid #999;flex:2;"><div style="font-size:8px;color:#000;">報告者</div><div style="font-weight:700;font-size:13px;">' + esc(staff) + '</div></div>';
-    pagesHtml += '<div style="padding:2.5mm 4mm;border-right:1px solid #999;text-align:center;flex:1.2;' + sampBg + '"><div style="font-size:8px;color:#000;">抜取有無</div><div style="font-weight:700;font-size:13px;">' + sampVal + '</div></div>';
-    pagesHtml += '<div style="padding:2.5mm 4mm;border-right:1px solid #999;text-align:center;flex:1.5;"><div style="font-size:8px;color:#000;">検質数計</div><div style="font-weight:700;font-size:11px;">' + totalInsp + ' ps</div></div>';
-    pagesHtml += '<div style="padding:2.5mm 4mm;border-right:1px solid #999;text-align:center;flex:1.5;"><div style="font-size:8px;color:#000;">対象数計</div><div style="font-weight:700;font-size:11px;">' + totalArrival.toLocaleString() + ' ps</div></div>';
-    pagesHtml += '<div style="padding:2.5mm 4mm;text-align:center;flex:1.5;"><div style="font-size:8px;color:#000;">検質率</div><div style="font-weight:700;font-size:11px;">' + inspRate + '%</div></div>';
+    pagesHtml += '<div style="padding:2mm 3mm 4mm;border-right:1px solid #999;flex:2;"><div style="font-size:10px;color:#000;">検質日</div><div style="font-weight:700;font-size:15px;margin-top:2mm;">' + date + '</div></div>';
+    pagesHtml += '<div style="padding:2mm 3mm 4mm;border-right:1px solid #999;flex:2;"><div style="font-size:10px;color:#000;">報告者</div><div style="font-weight:700;font-size:15px;margin-top:2mm;">' + esc(staff) + '</div></div>';
+    pagesHtml += '<div style="padding:2mm 4mm 4mm;border-right:1px solid #999;text-align:center;flex:1.2;' + sampBg + '"><div style="font-size:10px;color:#000;">抜取有無</div><div style="font-weight:700;font-size:16px;margin-top:2mm;">' + sampVal + '</div></div>';
+    pagesHtml += '<div style="padding:2mm 4mm 4mm;border-right:1px solid #999;text-align:center;flex:1.5;"><div style="font-size:10px;color:#000;">検質数計</div><div style="font-weight:700;font-size:14px;margin-top:2mm;">' + totalInsp + ' ps</div></div>';
+    pagesHtml += '<div style="padding:2mm 4mm 4mm;border-right:1px solid #999;text-align:center;flex:1.5;"><div style="font-size:10px;color:#000;">対象数計</div><div style="font-weight:700;font-size:14px;margin-top:2mm;">' + totalArrival.toLocaleString() + ' ps</div></div>';
+    pagesHtml += '<div style="padding:2mm 4mm 4mm;text-align:center;flex:1.5;"><div style="font-size:10px;color:#000;">検質率</div><div style="font-weight:700;font-size:14px;margin-top:2mm;">' + inspRate + '%</div></div>';
     pagesHtml += '</div>';
 
     // 品目カード2×2
