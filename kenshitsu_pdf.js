@@ -75,12 +75,13 @@ function _buildPdfFullHtml(center, date, staff, sampling, items, doPrint) {
     h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:2mm;margin-bottom:2mm;">';
     var supLen = (item.supplier || '-').length;
     var supSize = supLen > 15 ? '8px' : '10px';
-    h += '<div><span style="color:#000;font-size:9px;">仕入先</span><br><span style="font-size:' + supSize + ';margin-top:1mm;display:inline-block;white-space:nowrap">' + esc(item.supplier || '-') + '</span></div>';
-    h += '<div><span style="color:#000;font-size:9px;">産地</span><br><span style="font-size:10px;margin-top:1mm;display:inline-block">' + esc(item.origin || '-') + '</span></div>';
-    h += '<div><span style="color:#000;font-size:9px;">入荷数</span><br><b style="font-size:10px;margin-top:1mm;display:inline-block">' + aq + ' ps</b></div>';
-    h += '<div><span style="color:#000;font-size:9px;">検質数</span><br><b style="font-size:10px;margin-top:1mm;display:inline-block">' + iq + ' ps</b></div>';
-    h += '<div><span style="color:#000;font-size:9px;">不良数</span><br><b style="font-size:10px;margin-top:1mm;display:inline-block;' + (isNG ? 'color:#c0392b;' : '') + '">' + dq + ' ps</b></div>';
-    h += '<div><span style="color:#000;font-size:9px;">不良率</span><br><b style="font-size:10px;margin-top:1mm;display:inline-block;' + (isNG ? 'color:#c0392b;' : '') + '">' + rate + '%</b></div>';
+    var bg = 'background:#f5f5f5;border-radius:2px;padding:1mm 2mm;';
+    h += '<div style="' + bg + '"><span style="color:#000;font-size:9px;">仕入先</span><br><span style="font-size:' + supSize + ';margin-top:1mm;display:inline-block;white-space:nowrap">' + esc(item.supplier || '-') + '</span></div>';
+    h += '<div style="' + bg + '"><span style="color:#000;font-size:9px;">産地</span><br><span style="font-size:10px;margin-top:1mm;display:inline-block">' + esc(item.origin || '-') + '</span></div>';
+    h += '<div style="' + bg + '"><span style="color:#000;font-size:9px;">入荷数</span><br><b style="font-size:10px;margin-top:1mm;display:inline-block">' + aq + ' ps</b></div>';
+    h += '<div style="' + bg + '"><span style="color:#000;font-size:9px;">検質数</span><br><b style="font-size:10px;margin-top:1mm;display:inline-block">' + iq + ' ps</b></div>';
+    h += '<div style="' + bg + '"><span style="color:#000;font-size:9px;">不良数</span><br><b style="font-size:10px;margin-top:1mm;display:inline-block;' + (isNG ? 'color:#c0392b;' : '') + '">' + dq + ' ps</b></div>';
+    h += '<div style="' + bg + '"><span style="color:#000;font-size:9px;">不良率</span><br><b style="font-size:10px;margin-top:1mm;display:inline-block;' + (isNG ? 'color:#c0392b;' : '') + '">' + rate + '%</b></div>';
     h += '</div>';
     if (isNG && reason) {
       h += '<div style="background:#fff5f5;border-radius:2px;padding:1.5mm 2mm;border-left:3px solid #c0392b;font-size:8px;margin-bottom:1.5mm;"><b>不良理由:</b> ' + esc(reason) + '</div>';
