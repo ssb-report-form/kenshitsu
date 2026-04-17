@@ -175,15 +175,16 @@ function _buildPdfFullHtml(center, date, staff, sampling, items, doPrint) {
       // 左：情報
       pagesHtml += '<div style="flex:1;">';
       pagesHtml += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:2mm;margin-bottom:2mm;font-size:9px;">';
-      pagesHtml += '<div><span style="color:#000;font-size:7.5px;">仕入先</span><br><b>' + esc(item.supplier || '-') + '</b></div>';
-      pagesHtml += '<div><span style="color:#000;font-size:7.5px;">産地</span><br><b>' + esc(item.origin || '-') + '</b></div>';
-      pagesHtml += '<div><span style="color:#000;font-size:7.5px;">入荷数</span><br><b>' + aq + ' ps</b></div>';
-      pagesHtml += '<div><span style="color:#000;font-size:7.5px;">検質数</span><br><b>' + iq + ' ps</b></div>';
-      pagesHtml += '<div><span style="color:#000;font-size:7.5px;">不良数</span><br><b style="color:#c0392b;">' + dq + ' ps</b></div>';
-      pagesHtml += '<div><span style="color:#000;font-size:7.5px;">不良率</span><br><b style="color:#c0392b;">' + rate + '%</b></div>';
+      var dbg = 'background:#f5f5f5;border-radius:2px;padding:1mm 2mm;';
+      pagesHtml += '<div style="' + dbg + '"><span style="color:#000;font-size:7.5px;">仕入先</span><br><b>' + esc(item.supplier || '-') + '</b></div>';
+      pagesHtml += '<div style="' + dbg + '"><span style="color:#000;font-size:7.5px;">産地</span><br><b>' + esc(item.origin || '-') + '</b></div>';
+      pagesHtml += '<div style="' + dbg + '"><span style="color:#000;font-size:7.5px;">入荷数</span><br><b>' + aq + ' ps</b></div>';
+      pagesHtml += '<div style="' + dbg + '"><span style="color:#000;font-size:7.5px;">検質数</span><br><b>' + iq + ' ps</b></div>';
+      pagesHtml += '<div style="' + dbg + '"><span style="color:#000;font-size:7.5px;">不良数</span><br><b style="color:#c0392b;">' + dq + ' ps</b></div>';
+      pagesHtml += '<div style="' + dbg + '"><span style="color:#000;font-size:7.5px;">不良率</span><br><b style="color:#c0392b;">' + rate + '%</b></div>';
       pagesHtml += '</div>';
       if (reason) pagesHtml += '<div style="background:#fff5f5;border-radius:3px;padding:2mm;font-size:9px;margin-bottom:2mm;"><b>不良理由:</b> ' + esc(reason) + '</div>';
-      pagesHtml += '<div style="font-size:9px;color:#000;">コメント: ' + esc(item.comment || '') + '</div>';
+      pagesHtml += '<div style="background:#f5f5f5;border-radius:2px;padding:1.5mm 2mm;font-size:9px;color:#000;">コメント: ' + esc(item.comment || '') + '</div>';
       pagesHtml += '</div>';
 
       // 右：不良写真
