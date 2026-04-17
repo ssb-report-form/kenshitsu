@@ -42,7 +42,8 @@ function _buildPdfFullHtml(center, date, staff, sampling, items, doPrint) {
   var pages = [];
   for (var i = 0; i < items.length; i += 4) pages.push(items.slice(i, i + 4));
   if (pages.length === 0) pages.push([]);
-  var totalPages = pages.length;
+  var hasDefectPage = items.some(function(it) { return Number(it.defectQty) > 0; });
+  var totalPages = pages.length + (hasDefectPage ? 1 : 0);
 
   // 品目カードHTML生成
   function buildCard(item) {
@@ -151,6 +152,7 @@ function _buildPdfFullHtml(center, date, staff, sampling, items, doPrint) {
   var defectItems = items.filter(function(it) { return Number(it.defectQty) > 0; });
   if (defectItems.length > 0) {
     pagesHtml += '<div class="pdf-page">';
+    pagesHtml += '<div style="position:absolute;top:10mm;right:12mm;font-size:10px;">' + totalPages + '/' + totalPages + '</div>';
     pagesHtml += '<div style="text-align:center;font-size:18px;font-weight:700;letter-spacing:2px;margin-bottom:5mm;color:#000;">【まいばすけっと検質不良レポート】</div>';
     pagesHtml += '<div style="font-size:14px;font-weight:700;margin-bottom:4mm;color:#000;">まいばすけっと株式会社　御中</div>';
 
@@ -211,6 +213,7 @@ function _buildPdfFullHtml(center, date, staff, sampling, items, doPrint) {
 
     pagesHtml += '<div style="margin-top:auto;border-top:1px solid #ccc;padding-top:2mm;display:flex;justify-content:space-between;font-size:8px;color:#000;">';
     pagesHtml += '<span>' + esc(center) + '農産センター　TEL: ' + tel + '　FAX: ' + fax + '</span>';
+    pagesHtml += '<span>' + totalPages + ' / ' + totalPages + '</span>';
     pagesHtml += '</div>';
     pagesHtml += '</div>';
   }
