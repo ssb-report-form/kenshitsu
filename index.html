@@ -679,6 +679,27 @@ textarea.form-input{resize:vertical;min-height:80px}
   </div>
 </div>
 
+<!-- CROP MODAL -->
+<div class="modal-overlay" id="cropModal" style="display:none;z-index:60">
+  <div class="modal-sheet" style="max-width:420px;padding:16px">
+    <div class="modal-handle"></div>
+    <div style="font-size:16px;font-weight:700;margin-bottom:8px;text-align:center">写真のトリミング</div>
+    <div style="font-size:12px;color:var(--tx2);text-align:center;margin-bottom:12px">ドラッグで位置調整、スライダーで拡大縮小</div>
+    <div id="cropContainer" style="width:100%;height:0;padding-bottom:75%;overflow:hidden;border-radius:8px;border:2px solid var(--gold);position:relative;background:#000;touch-action:none;cursor:grab">
+      <img id="cropImg" style="position:absolute;user-select:none;-webkit-user-drag:none" draggable="false">
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;margin-top:10px">
+      <span style="font-size:12px;color:var(--tx2)">縮小</span>
+      <input type="range" id="cropZoom" min="100" max="300" value="100" style="flex:1;accent-color:var(--gold)">
+      <span style="font-size:12px;color:var(--tx2)">拡大</span>
+    </div>
+    <div class="btn-row" style="margin-top:12px">
+      <button class="btn btn-outline" onclick="cancelCrop()">キャンセル</button>
+      <button class="btn btn-gold" onclick="confirmCrop()">トリミング確定</button>
+    </div>
+  </div>
+</div>
+
 <!-- LOADING -->
 <div class="loading-overlay" id="loadingOverlay">
   <div class="spinner" style="width:36px;height:36px;border-width:3px"></div>
@@ -1215,40 +1236,129 @@ function closeModal() {
 
 // 検質画像添付
 // 画像リサイズ（横長4:3に収め、最大800px幅、JPEG圧縮）
+// ══════════════════════════════════════
+// トリミング機能
+// ══════════════════════════════════════
+var _crop = { callback: null, img: null, natW: 0, natH: 0, x: 0, y: 0, zoom: 100, dragging: false, startX: 0, startY: 0, startImgX: 0, startImgY: 0 };
+
 function resizeImage(dataUrl, callback) {
+  _crop.callback = callback;
   var img = new Image();
   img.onload = function() {
-    var w = img.width, h = img.height;
-    // PDF枠比率 4:3（横長）に中央クロップ
-    var targetRatio = 4 / 3;
-    var srcX = 0, srcY = 0, srcW = w, srcH = h;
-    var currentRatio = w / h;
+    _crop.img = img;
+    _crop.natW = img.width;
+    _crop.natH = img.height;
+    _crop.zoom = 100;
+    _crop.x = 0;
+    _crop.y = 0;
 
-    if (currentRatio < targetRatio) {
-      // 縦長 → 上下を中央クロップ
-      srcH = Math.floor(w / targetRatio);
-      srcY = Math.floor((h - srcH) / 2);
-    } else if (currentRatio > targetRatio) {
-      // 横長すぎ → 左右を中央クロップ
-      srcW = Math.floor(h * targetRatio);
-      srcX = Math.floor((w - srcW) / 2);
-    }
+    // コンテナサイズ取得
+    var container = document.getElementById('cropContainer');
+    var cropImg = document.getElementById('cropImg');
+    cropImg.src = dataUrl;
 
-    // 最大800x600にリサイズ
-    var maxW = 800, maxH = 600;
-    var scale = Math.min(maxW / srcW, maxH / srcH, 1);
-    var dw = Math.floor(srcW * scale);
-    var dh = Math.floor(srcH * scale);
+    // 初期表示: coverで枠いっぱいにフィット
+    var cW = container.offsetWidth;
+    var cH = container.offsetHeight || Math.floor(cW * 3 / 4);
+    var scaleW = cW / img.width;
+    var scaleH = cH / img.height;
+    var baseScale = Math.max(scaleW, scaleH); // coverと同じ
+    _crop.baseScale = baseScale;
+    _crop.cW = cW;
+    _crop.cH = cH;
 
-    var canvas = document.createElement('canvas');
-    canvas.width = dw;
-    canvas.height = dh;
-    var ctx = canvas.getContext('2d');
-    ctx.drawImage(img, srcX, srcY, srcW, srcH, 0, 0, dw, dh);
-    callback(canvas.toDataURL('image/jpeg', 0.85));
+    updateCropView();
+    document.getElementById('cropZoom').value = 100;
+    document.getElementById('cropModal').style.display = 'flex';
   };
   img.src = dataUrl;
 }
+
+function updateCropView() {
+  var cropImg = document.getElementById('cropImg');
+  var z = _crop.zoom / 100;
+  var s = _crop.baseScale * z;
+  var imgW = _crop.natW * s;
+  var imgH = _crop.natH * s;
+  cropImg.style.width = imgW + 'px';
+  cropImg.style.height = imgH + 'px';
+
+  // 位置制限（はみ出し防止）
+  var maxX = 0;
+  var minX = _crop.cW - imgW;
+  var maxY = 0;
+  var minY = _crop.cH - imgH;
+  _crop.x = Math.min(maxX, Math.max(minX, _crop.x));
+  _crop.y = Math.min(maxY, Math.max(minY, _crop.y));
+
+  cropImg.style.left = _crop.x + 'px';
+  cropImg.style.top = _crop.y + 'px';
+}
+
+function confirmCrop() {
+  var z = _crop.zoom / 100;
+  var s = _crop.baseScale * z;
+
+  // キャンバス上での切り出し位置を計算
+  var srcX = Math.round(-_crop.x / s);
+  var srcY = Math.round(-_crop.y / s);
+  var srcW = Math.round(_crop.cW / s);
+  var srcH = Math.round(_crop.cH / s);
+
+  // 出力: 800x600固定（4:3）
+  var canvas = document.createElement('canvas');
+  canvas.width = 800;
+  canvas.height = 600;
+  var ctx = canvas.getContext('2d');
+  ctx.drawImage(_crop.img, srcX, srcY, srcW, srcH, 0, 0, 800, 600);
+
+  document.getElementById('cropModal').style.display = 'none';
+  if (_crop.callback) _crop.callback(canvas.toDataURL('image/jpeg', 0.85));
+}
+
+function cancelCrop() {
+  document.getElementById('cropModal').style.display = 'none';
+}
+
+// ズームスライダー
+document.addEventListener('input', function(e) {
+  if (e.target.id === 'cropZoom') {
+    _crop.zoom = Number(e.target.value);
+    // ズーム時は中央を基準にする
+    var oldS = _crop.baseScale * ((_crop.zoom - (Number(e.target.value) - _crop.zoom)) / 100 || 1);
+    updateCropView();
+  }
+});
+
+// ドラッグ（マウス＆タッチ）
+(function() {
+  var container;
+  function onStart(x, y) {
+    _crop.dragging = true;
+    _crop.startX = x;
+    _crop.startY = y;
+    _crop.startImgX = _crop.x;
+    _crop.startImgY = _crop.y;
+  }
+  function onMove(x, y) {
+    if (!_crop.dragging) return;
+    _crop.x = _crop.startImgX + (x - _crop.startX);
+    _crop.y = _crop.startImgY + (y - _crop.startY);
+    updateCropView();
+  }
+  function onEnd() { _crop.dragging = false; }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    container = document.getElementById('cropContainer');
+    if (!container) return;
+    container.addEventListener('mousedown', function(e) { e.preventDefault(); onStart(e.clientX, e.clientY); });
+    document.addEventListener('mousemove', function(e) { onMove(e.clientX, e.clientY); });
+    document.addEventListener('mouseup', onEnd);
+    container.addEventListener('touchstart', function(e) { var t = e.touches[0]; onStart(t.clientX, t.clientY); }, {passive:true});
+    document.addEventListener('touchmove', function(e) { if (_crop.dragging) { var t = e.touches[0]; onMove(t.clientX, t.clientY); } }, {passive:true});
+    document.addEventListener('touchend', onEnd);
+  });
+})();
 
 // 撮影/アルバム選択トリガー
 function triggerPhoto(type, mode) {
