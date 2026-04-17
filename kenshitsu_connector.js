@@ -584,14 +584,39 @@ function demoSaveReport() {
 // API: 不良画像をDriveに保存
 // ═══════════════════════════════════════════════════════════════
 
-async function gasSaveDefectImage(center, deliveryDate, productName, imageData, index) {
+async function gasSaveDefectImage(center, deliveryDate, productName, supplier, imageData, index) {
   if (DEMO_MODE) return { ok: true, demo: true };
 
+  // POSTで送信（画像データが大きいため）
+  var payload = {
+    action: 'saveDefectImage',
+    center: center, deliveryDate: deliveryDate,
+    productName: productName, supplier: supplier || '',
+    imageData: imageData, index: String(index),
+  };
+
+  try {
+    var resp = await fetch(GAS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(payload),
+      redirect: 'follow',
+    });
+    if (resp.ok) {
+      var json = await resp.json();
+      if (json.success) return { ok: true, fileUrl: json.data.fileUrl };
+      return { ok: false, message: json.error };
+    }
+  } catch(e) {
+    console.warn('saveDefectImage POST failed:', e.message);
+  }
+
+  // フォールバック: GET/JSONP（画像切り捨て）
   var result = await callGAS("saveDefectImage", {
     center: center, deliveryDate: deliveryDate,
-    productName: productName, imageData: imageData, index: String(index),
+    productName: productName, supplier: supplier || '',
+    imageData: imageData, index: String(index),
   });
-
   if (!result) return { ok: true, demo: true };
   if (result.success) return { ok: true, fileUrl: result.data.fileUrl };
   return { ok: false, message: result.error };
