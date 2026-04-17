@@ -1252,24 +1252,36 @@ function resizeImage(dataUrl, callback) {
     _crop.x = 0;
     _crop.y = 0;
 
-    // コンテナサイズ取得
-    var container = document.getElementById('cropContainer');
+    // モーダルを先に表示してからサイズを測る
+    var modal = document.getElementById('cropModal');
+    modal.style.display = 'flex';
+    document.getElementById('cropZoom').value = 100;
     var cropImg = document.getElementById('cropImg');
     cropImg.src = dataUrl;
 
-    // 初期表示: coverで枠いっぱいにフィット
-    var cW = container.offsetWidth;
-    var cH = container.offsetHeight || Math.floor(cW * 3 / 4);
-    var scaleW = cW / img.width;
-    var scaleH = cH / img.height;
-    var baseScale = Math.max(scaleW, scaleH); // coverと同じ
-    _crop.baseScale = baseScale;
-    _crop.cW = cW;
-    _crop.cH = cH;
-
-    updateCropView();
-    document.getElementById('cropZoom').value = 100;
-    document.getElementById('cropModal').style.display = 'flex';
+    // 表示後にサイズ計算（次のフレーム）
+    requestAnimationFrame(function() {
+      var container = document.getElementById('cropContainer');
+      var cW = container.offsetWidth;
+      var cH = container.offsetHeight;
+      if (!cW || !cH) {
+        // フォールバック
+        cW = container.clientWidth || 300;
+        cH = Math.floor(cW * 0.75);
+      }
+      var scaleW = cW / img.width;
+      var scaleH = cH / img.height;
+      var baseScale = Math.max(scaleW, scaleH);
+      _crop.baseScale = baseScale;
+      _crop.cW = cW;
+      _crop.cH = cH;
+      // 中央配置
+      var imgW = img.width * baseScale;
+      var imgH = img.height * baseScale;
+      _crop.x = (cW - imgW) / 2;
+      _crop.y = (cH - imgH) / 2;
+      updateCropView();
+    });
   };
   img.src = dataUrl;
 }
