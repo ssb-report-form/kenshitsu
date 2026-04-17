@@ -585,9 +585,9 @@ function demoSaveReport() {
 // ═══════════════════════════════════════════════════════════════
 
 async function gasSaveDefectImage(center, deliveryDate, productName, supplier, imageData, index) {
-  if (DEMO_MODE) return { ok: true, demo: true };
+  console.log('[defect] 送信開始', { center: center, date: deliveryDate, product: productName, supplier: supplier, idx: index, size: (imageData||'').length });
+  if (DEMO_MODE) { console.log('[defect] DEMO mode'); return { ok: true, demo: true }; }
 
-  // POSTで送信（画像データが大きいため）
   var payload = {
     action: 'saveDefectImage',
     center: center, deliveryDate: deliveryDate,
@@ -595,20 +595,18 @@ async function gasSaveDefectImage(center, deliveryDate, productName, supplier, i
     imageData: imageData, index: String(index),
   };
 
+  // no-cors mode: レスポンスは読めないがPOSTは届く
   try {
-    var resp = await fetch(GAS_URL, {
+    await fetch(GAS_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify(payload),
-      redirect: 'follow',
     });
-    if (resp.ok) {
-      var json = await resp.json();
-      if (json.success) return { ok: true, fileUrl: json.data.fileUrl };
-      return { ok: false, message: json.error };
-    }
+    console.log('[defect] POST sent (no-cors)');
+    return { ok: true, fireAndForget: true };
   } catch(e) {
-    console.warn('saveDefectImage POST failed:', e.message);
+    console.error('[defect] POST failed:', e.message);
   }
 
   // フォールバック: GET/JSONP（画像切り捨て）

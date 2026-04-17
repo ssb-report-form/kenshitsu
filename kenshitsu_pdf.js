@@ -264,17 +264,20 @@ function savePdfToDrive(center, fileName, html, deliveryDate) {
     deliveryDate: deliveryDate || ''
   });
 
-  // POST送信（画像含むため大きいデータ）
+  // no-cors POST送信（レスポンス不明だが送信は届く）
   fetch(GAS_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'text/plain' },
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
     body: payload,
-    redirect: 'follow'
-  }).then(function(r) { return r.json(); })
+  }).then(function(r) {
+    console.log('[pdf] POST sent (no-cors)');
+    if (typeof toast === 'function') toast('Driveに送信しました', 'success');
+    return { success: true };
+  })
     .then(function(res) {
       if (res.success) {
-        if (typeof toast === 'function') toast('Driveに保存しました', 'success');
-        console.log('PDF saved to Drive:', res.data.fileName);
+        console.log('PDF sent to Drive');
       } else {
         console.warn('Drive save error:', res.error);
       }
