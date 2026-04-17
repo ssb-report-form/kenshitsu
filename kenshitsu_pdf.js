@@ -33,7 +33,6 @@ function _buildPdfFullHtml(center, date, staff, sampling, items, doPrint) {
     for (var col = 0; col < 4; col++) {
       var idx = col * 4 + row;
       var nm = (idx < items.length) ? esc(items[idx].name) : '';
-      // 長い名前は縮小
       var fs = nm.length > 14 ? '8px' : nm.length > 10 ? '9px' : '10px';
       itemListHtml += '<div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:' + fs + ';">' + (idx+1) + '.' + nm + '</div>';
     }
@@ -57,7 +56,7 @@ function _buildPdfFullHtml(center, date, staff, sampling, items, doPrint) {
     if (reason === 'その他（手入力）' && item.defectReasonText) reason = 'その他: ' + item.defectReasonText;
 
     // 検質写真（高さ固定で縦長画像もはみ出さない）
-    var photoH = '45mm';
+    var photoH = '35mm';
     var photosHtml = '';
     var ip = item.inspPhotos || [];
     for (var p = 0; p < 2; p++) {
@@ -92,7 +91,7 @@ function _buildPdfFullHtml(center, date, staff, sampling, items, doPrint) {
       h += '<div style="padding:1.5mm 2mm;font-size:8px;margin-bottom:1.5mm;">&nbsp;</div>';
     }
     h += '<div style="background:#f5f5f5;border-radius:2px;padding:1.5mm 2mm;margin-bottom:2mm;font-size:9px;"><span style="color:#000;">コメント</span>　' + esc(item.comment || '') + '</div>';
-    h += '<div style="display:flex;gap:2mm;height:45mm;overflow:hidden;">' + photosHtml + '</div>';
+    h += '<div style="display:flex;gap:2mm;height:35mm;overflow:hidden;">' + photosHtml + '</div>';
     h += '</div></div>';
     return h;
   }
@@ -192,9 +191,9 @@ function _buildPdfFullHtml(center, date, staff, sampling, items, doPrint) {
       var dp = item.defectPhotos || [];
       for (var p = 0; p < 2; p++) {
         if (dp[p]) {
-          pagesHtml += '<div style="flex:1;height:45mm;border:1px solid #ccc;border-radius:3px;overflow:hidden;"><img src="' + dp[p] + '" style="width:100%;height:100%;object-fit:cover;display:block;"></div>';
+          pagesHtml += '<div style="flex:1;height:35mm;border:1px solid #ccc;border-radius:3px;overflow:hidden;"><img src="' + dp[p] + '" style="width:100%;height:100%;object-fit:cover;display:block;"></div>';
         } else {
-          pagesHtml += '<div style="flex:1;height:45mm;border:1px dashed #ccc;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:8px;color:#aaa;">写真' + (p+1) + '</div>';
+          pagesHtml += '<div style="flex:1;height:35mm;border:1px dashed #ccc;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:8px;color:#aaa;">写真' + (p+1) + '</div>';
         }
       }
       pagesHtml += '</div>';
