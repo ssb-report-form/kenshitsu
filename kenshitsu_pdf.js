@@ -253,14 +253,15 @@ function _buildPdfFullHtml(center, date, staff, sampling, items, doPrint) {
 }
 
 // GASにHTMLを送信してDriveにPDF保存
-function savePdfToDrive(center, fileName, html) {
+function savePdfToDrive(center, fileName, html, deliveryDate) {
   if (typeof GAS_URL === 'undefined' || !GAS_URL) return;
 
   var payload = JSON.stringify({
     action: 'savePdfHtml',
     center: center,
     fileName: fileName + '.pdf',
-    html: html
+    html: html,
+    deliveryDate: deliveryDate || ''
   });
 
   // POST送信（画像含むため大きいデータ）

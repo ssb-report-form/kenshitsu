@@ -1570,7 +1570,7 @@ async function savePdf() {
         if (it.defectPhotos) {
           for (var j = 0; j < it.defectPhotos.length; j++) {
             if (it.defectPhotos[j]) {
-              await gasSaveDefectImage(state.center, deliveryDate, it.name, it.defectPhotos[j], j+1);
+              await gasSaveDefectImage(state.center, deliveryDate, it.name, it.supplier, it.defectPhotos[j], j+1);
             }
           }
         }
@@ -1585,9 +1585,10 @@ async function savePdf() {
     if (typeof generatePdfHtml === 'function' && typeof savePdfToDrive === 'function') {
       var pdfHtml = generatePdfHtml(state.center, date, staff, '', state.items);
       var delivDate = new Date(new Date(date).getTime() + 86400000);
-      var dateStr = delivDate.toISOString().slice(0,10).replace(/-/g, '');
+      var deliveryDateStr = delivDate.toISOString().slice(0,10); // YYYY-MM-DD
+      var dateStr = deliveryDateStr.replace(/-/g, '');
       var fileName = '【' + state.center + '農産】まいばすけっと検質報告書_' + dateStr + '店着';
-      savePdfToDrive(state.center, fileName, pdfHtml);
+      savePdfToDrive(state.center, fileName, pdfHtml, deliveryDateStr);
     }
     done++;
   } catch(e) { console.warn('savePdf error:', e); }

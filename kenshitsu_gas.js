@@ -60,9 +60,9 @@ const CONFIG = {
   // ── Google Drive フォルダID（不良画像保存先） ──────────────
   // 後でフォルダURLを設定してください
   DEFECT_IMAGE_FOLDERS: {
-    "大田": "ここに大田用フォルダIDを貼り付け",
-    "市川": "ここに市川用フォルダIDを貼り付け",
-    "浮島": "ここに浮島用フォルダIDを貼り付け",
+    "大田": "1Xvbrx1NqG4oMkM5GLstiZDrDteWRgo0C",
+    "市川": "18u0exuhhxJUTQI2H45on3QKlyEDBePky",
+    "浮島": "1LHFQiLt7CFJvtwnHf2LnT6vhfYR1S4z2",
   },
 
   // ── PDF設定 ────────────────────────────────────────────────
@@ -546,6 +546,7 @@ function handleSavePdfHtml(data) {
   var center = data.center || "";
   var fileName = data.fileName || "検質報告書.pdf";
   var html = data.html || "";
+  var deliveryDate = data.deliveryDate || "";
 
   if (!html) return error("HTMLが空です");
   if (!fileName.match(/\.pdf$/)) fileName += ".pdf";
@@ -554,10 +555,29 @@ function handleSavePdfHtml(data) {
   if (!folderId) return error("センター「" + center + "」のPDF保存先フォルダが未設定です");
 
   try {
+    var parentFolder = DriveApp.getFolderById(folderId);
+
+    // 月別サブフォルダ名（例: "2026-04"）
+    var monthFolder = (deliveryDate || "").substring(0, 7);
+    if (!monthFolder || monthFolder.length !== 7) {
+      // ファイル名から日付を抽出試行: 20260417 形式
+      var m = fileName.match(/(\d{4})(\d{2})\d{2}/);
+      if (m) monthFolder = m[1] + "-" + m[2];
+      else monthFolder = Utilities.formatDate(new Date(), "Asia/Tokyo", "yyyy-MM");
+    }
+
+    // 月別サブフォルダを取得 or 作成
+    var folder;
+    var subFolders = parentFolder.getFoldersByName(monthFolder);
+    if (subFolders.hasNext()) {
+      folder = subFolders.next();
+    } else {
+      folder = parentFolder.createFolder(monthFolder);
+    }
+
     var blob = HtmlService.createHtmlOutput(html).getBlob().getAs('application/pdf').setName(fileName);
-    var folder = DriveApp.getFolderById(folderId);
     var file = folder.createFile(blob);
-    return ok({ saved: true, fileId: file.getId(), fileName: file.getName(), fileUrl: file.getUrl() });
+    return ok({ saved: true, fileId: file.getId(), fileName: file.getName(), fileUrl: file.getUrl(), folder: monthFolder });
   } catch (e) {
     Logger.log("savePdfHtml error: " + e);
     return error("PDF保存に失敗: " + e.toString());
@@ -573,6 +593,7 @@ function handleSaveDefectImage(data) {
   var center = data.center;
   var deliveryDate = data.deliveryDate || "";
   var productName = data.productName || "unknown";
+  var supplier = data.supplier || "";
   var imageData = data.imageData || "";  // base64
   var index = data.index || 1;
 
@@ -582,13 +603,31 @@ function handleSaveDefectImage(data) {
   }
 
   try {
-    var folder = DriveApp.getFolderById(folderId);
+    var parentFolder = DriveApp.getFolderById(folderId);
+
+    // 月別サブフォルダ名（例: "2026-04"）
+    var monthFolder = (deliveryDate || "").substring(0, 7); // YYYY-MM
+    if (!monthFolder || monthFolder.length !== 7) {
+      monthFolder = Utilities.formatDate(new Date(), "Asia/Tokyo", "yyyy-MM");
+    }
+
+    // 月別サブフォルダを取得 or 作成
+    var folder;
+    var subFolders = parentFolder.getFoldersByName(monthFolder);
+    if (subFolders.hasNext()) {
+      folder = subFolders.next();
+    } else {
+      folder = parentFolder.createFolder(monthFolder);
+    }
+
     // base64 → Blob
     var base64 = imageData.replace(/^data:image\/\w+;base64,/, "");
-    var blob = Utilities.newBlob(Utilities.base64Decode(base64), "image/jpeg",
-      deliveryDate + "_" + productName + "_" + index + ".jpg");
+    // ファイル名: 【大田農産】不良画像_2026-04-17_トマト_横浜丸中青果株式会社_1.jpg
+    var fileName = "【" + center + "農産】不良画像_" + deliveryDate + "_" + productName + "_" + supplier + "_" + index + ".jpg";
+    fileName = fileName.replace(/[\\\/:*?"<>|]/g, "_");
+    var blob = Utilities.newBlob(Utilities.base64Decode(base64), "image/jpeg", fileName);
     var file = folder.createFile(blob);
-    return ok({ fileId: file.getId(), fileName: file.getName(), fileUrl: file.getUrl() });
+    return ok({ fileId: file.getId(), fileName: file.getName(), fileUrl: file.getUrl(), folder: monthFolder });
   } catch (e) {
     Logger.log("saveDefectImage error: " + e);
     return error("画像保存に失敗: " + e.toString());
