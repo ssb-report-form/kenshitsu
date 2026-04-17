@@ -286,6 +286,31 @@ function savePdfToDrive(center, fileName, html, deliveryDate) {
     });
 }
 
+// PDFのBlobデータ（base64）をGASに送信してDriveに保存
+function savePdfBlobToDrive(center, fileName, base64Pdf, deliveryDate) {
+  if (typeof GAS_URL === 'undefined' || !GAS_URL) return;
+
+  var payload = JSON.stringify({
+    action: 'savePdfBlob',
+    center: center,
+    fileName: fileName + '.pdf',
+    pdfBase64: base64Pdf,
+    deliveryDate: deliveryDate || ''
+  });
+
+  fetch(GAS_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: payload,
+  }).then(function() {
+    console.log('[pdf-blob] sent');
+    if (typeof toast === 'function') toast('PDFをDriveに送信しました', 'success');
+  }).catch(function(e) {
+    console.warn('[pdf-blob] failed:', e.message);
+  });
+}
+
 function esc(s) {
   if (!s) return '';
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');

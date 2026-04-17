@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
 <title>まいばすけっと 検質報告</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -1580,15 +1581,55 @@ async function savePdf() {
     showLoading('提出中... (3/' + steps + ') PDF保存');
   } catch(e) { console.warn('saveDefectImage error:', e); }
 
-  // 3) PDFをDriveに保存（印刷画面は開かない）
+  // 3) ブラウザでPDF生成してDriveに保存（プレビューと同じ見た目）
   try {
-    if (typeof generatePdfHtml === 'function' && typeof savePdfToDrive === 'function') {
+    if (typeof generatePdfHtml === 'function' && typeof html2pdf !== 'undefined') {
       var pdfHtml = generatePdfHtml(state.center, date, staff, '', state.items);
       var delivDate = new Date(new Date(date).getTime() + 86400000);
-      var deliveryDateStr = delivDate.toISOString().slice(0,10); // YYYY-MM-DD
+      var deliveryDateStr = delivDate.toISOString().slice(0,10);
       var dateStr = deliveryDateStr.replace(/-/g, '');
       var fileName = '【' + state.center + '農産】まいばすけっと検質報告書_' + dateStr + '店着';
-      savePdfToDrive(state.center, fileName, pdfHtml, deliveryDateStr);
+
+      // 隠しコンテナにHTMLを描画
+      var hiddenDiv = document.createElement('div');
+      hiddenDiv.style.position = 'absolute';
+      hiddenDiv.style.left = '-9999px';
+      hiddenDiv.style.top = '0';
+      hiddenDiv.innerHTML = pdfHtml.replace(/^[\s\S]*<body[^>]*>([\s\S]*?)<\/body>[\s\S]*$/, '$1');
+      // styleも追加
+      var styleMatch = pdfHtml.match(/<style>([\s\S]*?)<\/style>/);
+      if (styleMatch) {
+        var styleEl = document.createElement('style');
+        styleEl.textContent = styleMatch[1];
+        hiddenDiv.appendChild(styleEl);
+      }
+      document.body.appendChild(hiddenDiv);
+
+      // html2pdfでPDF生成
+      showLoading('PDF生成中...');
+      var opt = {
+        margin: 0,
+        filename: fileName + '.pdf',
+        image: { type: 'jpeg', quality: 0.95 },
+        html2canvas: { scale: 2, useCORS: true, logging: false },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: ['css', 'legacy'] }
+      };
+
+      var worker = html2pdf().set(opt).from(hiddenDiv);
+      var pdfBlob = await worker.outputPdf('blob');
+      document.body.removeChild(hiddenDiv);
+
+      // PDFをbase64にしてGASへ送信
+      var reader = new FileReader();
+      var base64Pdf = await new Promise(function(resolve) {
+        reader.onload = function() { resolve(reader.result); };
+        reader.readAsDataURL(pdfBlob);
+      });
+      // savePdfToDriveを新PDF送信用に拡張
+      if (typeof savePdfBlobToDrive === 'function') {
+        savePdfBlobToDrive(state.center, fileName, base64Pdf, deliveryDateStr);
+      }
     }
     done++;
   } catch(e) { console.warn('savePdf error:', e); }

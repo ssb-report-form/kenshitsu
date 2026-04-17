@@ -97,6 +97,7 @@ function doPost(e) {
       case "saveReport":   return handleSaveReport(data);
       case "saveDefectImage": return handleSaveDefectImage(data);
       case "savePdfHtml":    return handleSavePdfHtml(data);
+      case "savePdfBlob":    return handleSavePdfBlob(data);
       case "savePdf":      return handleSavePdf(data);
       default:             return ok({ message: "unknown action: " + data.action });
     }
@@ -580,6 +581,49 @@ function handleSavePdfHtml(data) {
     return ok({ saved: true, fileId: file.getId(), fileName: file.getName(), fileUrl: file.getUrl(), folder: monthFolder });
   } catch (e) {
     Logger.log("savePdfHtml error: " + e);
+    return error("PDF保存に失敗: " + e.toString());
+  }
+}
+
+
+// ═══════════════════════════════════════════════════════════════
+// 5b-2. ブラウザ生成PDF（base64）をDriveに保存
+// ═══════════════════════════════════════════════════════════════
+
+function handleSavePdfBlob(data) {
+  var center = data.center || "";
+  var fileName = data.fileName || "検質報告書.pdf";
+  var pdfBase64 = data.pdfBase64 || "";
+  var deliveryDate = data.deliveryDate || "";
+
+  if (!pdfBase64) return error("PDFデータが空です");
+  if (!fileName.match(/\.pdf$/)) fileName += ".pdf";
+
+  var folderId = CONFIG.DRIVE_FOLDERS[center];
+  if (!folderId) return error("センター「" + center + "」のPDF保存先フォルダが未設定です");
+
+  try {
+    var parentFolder = DriveApp.getFolderById(folderId);
+    var monthFolder = (deliveryDate || "").substring(0, 7);
+    if (!monthFolder || monthFolder.length !== 7) {
+      monthFolder = Utilities.formatDate(new Date(), "Asia/Tokyo", "yyyy-MM");
+    }
+
+    var folder;
+    var subFolders = parentFolder.getFoldersByName(monthFolder);
+    if (subFolders.hasNext()) {
+      folder = subFolders.next();
+    } else {
+      folder = parentFolder.createFolder(monthFolder);
+    }
+
+    // base64 → PDF Blob
+    var base64 = pdfBase64.replace(/^data:application\/pdf;base64,/, "");
+    var blob = Utilities.newBlob(Utilities.base64Decode(base64), "application/pdf", fileName);
+    var file = folder.createFile(blob);
+    return ok({ saved: true, fileId: file.getId(), fileName: file.getName(), fileUrl: file.getUrl(), folder: monthFolder });
+  } catch (e) {
+    Logger.log("savePdfBlob error: " + e);
     return error("PDF保存に失敗: " + e.toString());
   }
 }
