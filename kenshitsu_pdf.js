@@ -27,12 +27,15 @@ function _buildPdfFullHtml(center, date, staff, sampling, items, doPrint) {
   var inspRate = totalArrival > 0 ? (Math.round(totalInsp / totalArrival * 1000) / 10) : 0;
   var hasDefect = items.some(function(i) { return Number(i.defectQty) > 0; });
 
-  // 品目一覧HTML（4列×4行）
+  // 品目一覧HTML（4列×4行 = 最大16枠、空は番号のみ）
   var itemListHtml = '';
   for (var row = 0; row < 4; row++) {
     for (var col = 0; col < 4; col++) {
       var idx = col * 4 + row;
-      itemListHtml += '<div>' + (idx < items.length ? (idx+1) + '.' + esc(items[idx].name) : '') + '</div>';
+      var nm = (idx < items.length) ? esc(items[idx].name) : '';
+      // 長い名前は縮小
+      var fs = nm.length > 14 ? '8px' : nm.length > 10 ? '9px' : '10px';
+      itemListHtml += '<div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:' + fs + ';">' + (idx+1) + '.' + nm + '</div>';
     }
   }
 
@@ -121,7 +124,7 @@ function _buildPdfFullHtml(center, date, staff, sampling, items, doPrint) {
     // 品目一覧（フル幅）
     pagesHtml += '<div style="border:1px solid #999;padding:2.5mm 3mm;margin-bottom:3mm;">';
     pagesHtml += '<div style="font-size:11px;font-weight:700;margin-bottom:2mm;color:#000;">今週の検質品目</div>';
-    pagesHtml += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0 4mm;font-size:10px;line-height:1.7;color:#000;">' + itemListHtml + '</div>';
+    pagesHtml += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1mm 4mm;line-height:1.3;color:#000;">' + itemListHtml + '</div>';
     pagesHtml += '</div>';
 
     // サマリーバー（ラベル10px、値15px、値を下寄せ）
