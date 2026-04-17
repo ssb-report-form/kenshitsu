@@ -129,12 +129,12 @@ function _buildPdfFullHtml(center, date, staff, sampling, items, doPrint) {
 
     // サマリーバー（ラベル10px、値15px、値を下寄せ）
     pagesHtml += '<div style="display:flex;border:1px solid #999;margin-bottom:4mm;">';
-    pagesHtml += '<div style="padding:2mm 3mm 4mm;border-right:1px solid #999;flex:2;"><div style="font-size:10px;color:#000;">検質日</div><div style="font-weight:700;font-size:15px;margin-top:2mm;">' + date + '</div></div>';
-    pagesHtml += '<div style="padding:2mm 3mm 4mm;border-right:1px solid #999;flex:2;"><div style="font-size:10px;color:#000;">報告者</div><div style="font-weight:700;font-size:15px;margin-top:2mm;">' + esc(staff) + '</div></div>';
-    pagesHtml += '<div style="padding:2mm 4mm 4mm;border-right:1px solid #999;text-align:center;flex:1.2;' + sampBg + '"><div style="font-size:10px;color:#000;">抜取有無</div><div style="font-weight:700;font-size:16px;margin-top:2mm;">' + sampVal + '</div></div>';
-    pagesHtml += '<div style="padding:2mm 4mm 4mm;border-right:1px solid #999;text-align:center;flex:1.5;"><div style="font-size:10px;color:#000;">検質数計</div><div style="font-weight:700;font-size:14px;margin-top:2mm;">' + totalInsp + ' ps</div></div>';
-    pagesHtml += '<div style="padding:2mm 4mm 4mm;border-right:1px solid #999;text-align:center;flex:1.5;"><div style="font-size:10px;color:#000;">対象数計</div><div style="font-weight:700;font-size:14px;margin-top:2mm;">' + totalArrival.toLocaleString() + ' ps</div></div>';
-    pagesHtml += '<div style="padding:2mm 4mm 4mm;text-align:center;flex:1.5;"><div style="font-size:10px;color:#000;">検質率</div><div style="font-weight:700;font-size:14px;margin-top:2mm;">' + inspRate + '%</div></div>';
+    pagesHtml += '<div style="padding:2mm 3mm 2mm;border-right:1px solid #999;flex:2;"><div style="font-size:10px;color:#000;">検質日</div><div style="font-weight:700;font-size:15px;margin-top:2mm;">' + date + '</div></div>';
+    pagesHtml += '<div style="padding:2mm 3mm 2mm;border-right:1px solid #999;flex:2;"><div style="font-size:10px;color:#000;">報告者</div><div style="font-weight:700;font-size:15px;margin-top:2mm;">' + esc(staff) + '</div></div>';
+    pagesHtml += '<div style="padding:2mm 4mm 2mm;border-right:1px solid #999;text-align:center;flex:1.2;' + sampBg + '"><div style="font-size:10px;color:#000;">抜取有無</div><div style="font-weight:700;font-size:16px;margin-top:2mm;">' + sampVal + '</div></div>';
+    pagesHtml += '<div style="padding:2mm 4mm 2mm;border-right:1px solid #999;text-align:center;flex:1.5;"><div style="font-size:10px;color:#000;">検質数計</div><div style="font-weight:700;font-size:14px;margin-top:2mm;">' + totalInsp + ' ps</div></div>';
+    pagesHtml += '<div style="padding:2mm 4mm 2mm;border-right:1px solid #999;text-align:center;flex:1.5;"><div style="font-size:10px;color:#000;">対象数計</div><div style="font-weight:700;font-size:14px;margin-top:2mm;">' + totalArrival.toLocaleString() + ' ps</div></div>';
+    pagesHtml += '<div style="padding:2mm 4mm 2mm;text-align:center;flex:1.5;"><div style="font-size:10px;color:#000;">検質率</div><div style="font-weight:700;font-size:14px;margin-top:2mm;">' + inspRate + '%</div></div>';
     pagesHtml += '</div>';
 
     // 品目カード2×2
