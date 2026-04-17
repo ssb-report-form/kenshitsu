@@ -1317,15 +1317,17 @@ function confirmCrop() {
   var srcW = Math.round(_crop.cW / s);
   var srcH = Math.round(_crop.cH / s);
 
-  // 出力: 1200x900固定（4:3、少し高画質）
+  // 出力: 2000x1500固定（4:3、最高画質）
   var canvas = document.createElement('canvas');
-  canvas.width = 1200;
-  canvas.height = 900;
+  canvas.width = 2000;
+  canvas.height = 1500;
   var ctx = canvas.getContext('2d');
-  ctx.drawImage(_crop.img, srcX, srcY, srcW, srcH, 0, 0, 1200, 900);
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(_crop.img, srcX, srcY, srcW, srcH, 0, 0, 2000, 1500);
 
   document.getElementById('cropModal').style.display = 'none';
-  if (_crop.callback) _crop.callback(canvas.toDataURL('image/jpeg', 0.9));
+  if (_crop.callback) _crop.callback(canvas.toDataURL('image/jpeg', 0.95));
 }
 
 function cancelCrop() {

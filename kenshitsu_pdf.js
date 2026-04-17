@@ -151,8 +151,8 @@ function _buildPdfFullHtml(center, date, staff, sampling, items, doPrint) {
   var defectItems = items.filter(function(it) { return Number(it.defectQty) > 0; });
   if (defectItems.length > 0) {
     pagesHtml += '<div class="pdf-page">';
-    pagesHtml += '<div style="text-align:center;font-size:17px;font-weight:700;letter-spacing:2px;margin-bottom:3mm;color:#000;">【まいばすけっと検質不良レポート】</div>';
-    pagesHtml += '<div style="font-size:11px;font-weight:700;margin-bottom:4mm;">まいばすけっと株式会社　御中</div>';
+    pagesHtml += '<div style="text-align:center;font-size:18px;font-weight:700;letter-spacing:2px;margin-bottom:5mm;color:#000;">【まいばすけっと検質不良レポート】</div>';
+    pagesHtml += '<div style="font-size:14px;font-weight:700;margin-bottom:4mm;color:#000;">まいばすけっと株式会社　御中</div>';
 
     pagesHtml += '<div style="display:flex;border:1px solid #999;margin-bottom:5mm;">';
     pagesHtml += '<div style="padding:2mm 4mm;border-right:1px solid #999;flex:1.5;"><div style="font-size:8px;color:#000;">検質日</div><div style="font-weight:700;font-size:13px;">' + date + '</div></div>';
@@ -169,22 +169,34 @@ function _buildPdfFullHtml(center, date, staff, sampling, items, doPrint) {
       if (reason === 'その他（手入力）' && item.defectReasonText) reason = 'その他: ' + item.defectReasonText;
 
       pagesHtml += '<div style="border:1.5px solid #c0392b;border-radius:4px;overflow:hidden;margin-bottom:4mm;">';
-      pagesHtml += '<div style="background:#c0392b;color:#fff;padding:2mm 3mm;font-size:11px;font-weight:700;">⚠ ' + esc(item.name) + '</div>';
-      pagesHtml += '<div style="padding:3mm;display:flex;gap:4mm;">';
+      // カードヘッダー（検質報告書と同じサイズ）
+      pagesHtml += '<div style="background:#c0392b;color:#fff;padding:1.5mm 3mm;font-size:10px;font-weight:700;">⚠ ' + esc(item.name) + '</div>';
+      pagesHtml += '<div style="padding:2mm 3mm;display:flex;gap:4mm;">';
 
-      // 左：情報
+      // 左：情報（2列×3段）
       pagesHtml += '<div style="flex:1;">';
-      pagesHtml += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:2mm;margin-bottom:2mm;font-size:9px;">';
       var dbg = 'background:#f5f5f5;border-radius:2px;padding:1mm 2mm;';
-      pagesHtml += '<div style="' + dbg + '"><span style="color:#000;font-size:7.5px;">仕入先</span><br><b>' + esc(item.supplier || '-') + '</b></div>';
-      pagesHtml += '<div style="' + dbg + '"><span style="color:#000;font-size:7.5px;">産地</span><br><b>' + esc(item.origin || '-') + '</b></div>';
-      pagesHtml += '<div style="' + dbg + '"><span style="color:#000;font-size:7.5px;">入荷数</span><br><b>' + aq + ' ps</b></div>';
-      pagesHtml += '<div style="' + dbg + '"><span style="color:#000;font-size:7.5px;">検質数</span><br><b>' + iq + ' ps</b></div>';
-      pagesHtml += '<div style="' + dbg + '"><span style="color:#000;font-size:7.5px;">不良数</span><br><b style="color:#c0392b;">' + dq + ' ps</b></div>';
-      pagesHtml += '<div style="' + dbg + '"><span style="color:#000;font-size:7.5px;">不良率</span><br><b style="color:#c0392b;">' + rate + '%</b></div>';
+      // 1段目: 仕入先 / 産地
+      pagesHtml += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:2mm;margin-bottom:2mm;">';
+      pagesHtml += '<div style="' + dbg + '"><span style="color:#000;font-size:8px;">仕入先</span><br><b style="font-size:9px;">' + esc(item.supplier || '-') + '</b></div>';
+      pagesHtml += '<div style="' + dbg + '"><span style="color:#000;font-size:8px;">産地</span><br><b style="font-size:9px;">' + esc(item.origin || '-') + '</b></div>';
       pagesHtml += '</div>';
-      if (reason) pagesHtml += '<div style="background:#fff5f5;border-radius:3px;padding:2mm;font-size:9px;margin-bottom:2mm;"><b>不良理由:</b> ' + esc(reason) + '</div>';
-      pagesHtml += '<div style="background:#f5f5f5;border-radius:2px;padding:1.5mm 2mm;font-size:9px;color:#000;">コメント: ' + esc(item.comment || '') + '</div>';
+      // 2段目: 入荷数 / 検質数
+      pagesHtml += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:2mm;margin-bottom:2mm;">';
+      pagesHtml += '<div style="' + dbg + '"><span style="color:#000;font-size:8px;">入荷数</span><br><b style="font-size:9px;">' + aq + ' ps</b></div>';
+      pagesHtml += '<div style="' + dbg + '"><span style="color:#000;font-size:8px;">検質数</span><br><b style="font-size:9px;">' + iq + ' ps</b></div>';
+      pagesHtml += '</div>';
+      // 3段目: 不良数 / 不良率
+      pagesHtml += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:2mm;margin-bottom:2mm;">';
+      pagesHtml += '<div style="' + dbg + '"><span style="color:#000;font-size:8px;">不良数</span><br><b style="font-size:9px;color:#c0392b;">' + dq + ' ps</b></div>';
+      pagesHtml += '<div style="' + dbg + '"><span style="color:#000;font-size:8px;">不良率</span><br><b style="font-size:9px;color:#c0392b;">' + rate + '%</b></div>';
+      pagesHtml += '</div>';
+      // 不良理由
+      if (reason) {
+        pagesHtml += '<div style="background:#fff5f5;border-left:3px solid #c0392b;border-radius:2px;padding:1.5mm 2mm;font-size:9px;margin-bottom:2mm;"><b>不良理由:</b> ' + esc(reason) + '</div>';
+      }
+      // コメント
+      pagesHtml += '<div style="' + dbg + 'font-size:9px;color:#000;">コメント: ' + esc(item.comment || '') + '</div>';
       pagesHtml += '</div>';
 
       // 右：不良写真
