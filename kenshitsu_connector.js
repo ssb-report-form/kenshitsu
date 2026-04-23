@@ -586,7 +586,7 @@ function demoSaveReport() {
 
 async function gasSaveDefectImage(center, deliveryDate, productName, supplier, imageData, index) {
   console.log('[defect] 送信開始', { center: center, date: deliveryDate, product: productName, supplier: supplier, idx: index, size: (imageData||'').length });
-  if (DEMO_MODE) { console.log('[defect] DEMO mode'); return { ok: true, demo: true }; }
+  // DEMO_MODEでもno-cors POSTは届くので送信する
 
   var payload = {
     action: 'saveDefectImage',
