@@ -922,6 +922,21 @@ async function loadStaff() {
   staffList.forEach(name => {
     sel.innerHTML += '<option value="'+name+'">'+name+'</option>';
   });
+
+  // 前回の担当者を自動選択（端末ローカル保存、センター別）
+  try {
+    var lastStaff = localStorage.getItem('kenshitsu_lastStaff_' + state.center);
+    if (lastStaff && staffList.indexOf(lastStaff) >= 0) {
+      sel.value = lastStaff;
+    }
+  } catch(e) {}
+
+  // 選択変更時に保存
+  sel.onchange = function() {
+    try {
+      if (sel.value) localStorage.setItem('kenshitsu_lastStaff_' + state.center, sel.value);
+    } catch(e) {}
+  };
 }
 
 // ══════════════════════════════════════
