@@ -1319,17 +1319,17 @@ function confirmCrop() {
   var srcW = Math.round(_crop.cW / s);
   var srcH = Math.round(_crop.cH / s);
 
-  // 出力: 2000x1500固定（4:3、最高画質）
+  // 出力: 2400x1800固定（4:3、最高画質）
   var canvas = document.createElement('canvas');
-  canvas.width = 2000;
-  canvas.height = 1500;
+  canvas.width = 2400;
+  canvas.height = 1800;
   var ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = 'high';
-  ctx.drawImage(_crop.img, srcX, srcY, srcW, srcH, 0, 0, 2000, 1500);
+  ctx.drawImage(_crop.img, srcX, srcY, srcW, srcH, 0, 0, 2400, 1800);
 
   document.getElementById('cropModal').style.display = 'none';
-  if (_crop.callback) _crop.callback(canvas.toDataURL('image/jpeg', 0.95));
+  if (_crop.callback) _crop.callback(canvas.toDataURL('image/jpeg', 0.98));
 }
 
 function cancelCrop() {
@@ -1633,7 +1633,7 @@ async function savePdf() {
       for (var pi = 0; pi < pages.length; pi++) {
         console.log('[pdf] capturing page', pi+1);
         var canvas = await html2canvas(pages[pi], {
-          scale: 2,
+          scale: 3,
           useCORS: true,
           allowTaint: true,
           backgroundColor: '#ffffff',
@@ -1644,7 +1644,7 @@ async function savePdf() {
           windowHeight: 1123,
         });
         console.log('[pdf] canvas', pi+1, canvas.width, 'x', canvas.height);
-        var imgData = canvas.toDataURL('image/jpeg', 0.92);
+        var imgData = canvas.toDataURL('image/jpeg', 0.96);
         if (pi > 0) pdf.addPage();
         pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
       }
