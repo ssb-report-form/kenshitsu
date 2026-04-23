@@ -1595,15 +1595,16 @@ async function savePdf() {
       // ボディに可視コンテナを追加（html2canvasは可視要素を必要とする）
       var tempWrap = document.createElement('div');
       tempWrap.id = '__pdfWrap__';
-      tempWrap.style.cssText = 'position:fixed;left:-20000px;top:0;width:794px;background:#fff;z-index:2147483647;';
+      tempWrap.style.cssText = 'position:fixed;left:-20000px;top:0;width:794px;background:#ffffff !important;color:#333 !important;z-index:2147483647;';
 
       // スタイル抽出
       var styleMatch = pdfHtml.match(/<style[^>]*>([\s\S]*?)<\/style>/);
       var bodyMatch = pdfHtml.match(/<body[^>]*>([\s\S]*?)<\/body>/);
 
-      // アプリCSSのリセットを含めたスタイルをスコープ適用
-      var scopedCss = '#__pdfWrap__, #__pdfWrap__ *{all:revert;box-sizing:border-box;}';
-      scopedCss += '#__pdfWrap__{font-family:sans-serif;}';
+      // アプリCSSのリセット（PDF領域だけ全リセット）
+      var scopedCss = '#__pdfWrap__, #__pdfWrap__ *{all:revert;box-sizing:border-box;background:initial;color:initial;}';
+      scopedCss += '#__pdfWrap__{font-family:sans-serif !important;background:#ffffff !important;color:#333 !important;}';
+      scopedCss += '#__pdfWrap__ .pdf-page{background:#ffffff !important;color:#333 !important;}';
       scopedCss += (styleMatch ? styleMatch[1] : '');
 
       var styleEl = document.createElement('style');

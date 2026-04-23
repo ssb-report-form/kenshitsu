@@ -223,20 +223,23 @@ function _buildPdfFullHtml(center, date, staff, sampling, items, doPrint) {
   var dateStr = delivDate.toISOString().slice(0,10).replace(/-/g, '');
   var fileName = '【' + center + '農産】まいばすけっと検質報告書_' + dateStr + '店着';
 
+  var printButtons = doPrint
+    ? ('<div class="__no-print" style="position:fixed;top:10px;right:10px;z-index:9999;display:flex;gap:8px">' +
+       '<button onclick="window.print()" style="padding:10px 20px;background:#1a5c2e;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">🖨 印刷</button>' +
+       '<button onclick="window.close()" style="padding:10px 16px;background:#fff;color:#333;border:1px solid #ddd;border-radius:8px;font-size:14px;cursor:pointer;font-family:inherit">✕ 閉じる</button>' +
+       '</div>')
+    : '';
+
   var fullHtml = '<!DOCTYPE html><html><head><meta charset="UTF-8">' +
     '<title>' + fileName + '</title>' +
     '<style>' +
     '* { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; box-sizing: border-box; margin: 0; padding: 0; }' +
-    'body { font-family: "Hiragino Sans","Meiryo",sans-serif; background:#fff; }' +
-    '.pdf-page { width:210mm; height:297mm; padding:8mm 10mm 10mm; position:relative; display:flex; flex-direction:column; page-break-after:always; overflow:hidden; box-sizing:border-box; }' +
-    '@media print { .pdf-page { page-break-after:always; height:297mm; } @page { size:A4 portrait; margin:0; } }' +
-    '</style></head><body>' +
+    'html,body { background:#fff !important; color:#333 !important; font-family: "Hiragino Sans","Meiryo",sans-serif; }' +
+    '.pdf-page { width:210mm; height:297mm; padding:8mm 10mm 10mm; position:relative; display:flex; flex-direction:column; page-break-after:always; overflow:hidden; box-sizing:border-box; background:#fff !important; color:#333 !important; }' +
+    '@media print { .__no-print{display:none!important} .pdf-page { page-break-after:always; height:297mm; } @page { size:A4 portrait; margin:0; } }' +
+    '</style></head><body style="background:#fff;color:#333;">' +
     pagesHtml +
-    '<div style="position:fixed;top:10px;right:10px;z-index:9999;display:flex;gap:8px">' +
-    '<button onclick="window.print()" style="padding:10px 20px;background:#1a5c2e;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">🖨 印刷</button>' +
-    '<button onclick="window.close()" style="padding:10px 16px;background:#fff;color:#333;border:1px solid #ddd;border-radius:8px;font-size:14px;cursor:pointer;font-family:inherit">✕ 閉じる</button>' +
-    '</div>' +
-    '<style>@media print{div[style*="position:fixed"]{display:none!important}}<\/style>' +
+    printButtons +
     '</body></html>';
 
   if (doPrint) {
