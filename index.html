@@ -1592,67 +1592,64 @@ async function savePdf() {
 
       showLoading('PDF生成中...');
 
-      // ボディに可視コンテナを追加（html2canvasは可視要素を必要とする）
-      var tempWrap = document.createElement('div');
-      tempWrap.id = '__pdfWrap__';
-      tempWrap.style.cssText = 'position:fixed;left:-20000px;top:0;width:794px;background:#ffffff !important;color:#333 !important;z-index:2147483647;';
+      // iframeで完全隔離レンダリング
+      var iframe = document.createElement('iframe');
+      iframe.style.cssText = 'position:fixed;top:0;left:0;width:794px;height:1123px;border:none;background:#fff;opacity:0.01;z-index:2147483647;pointer-events:none;';
+      document.body.appendChild(iframe);
 
-      // スタイル抽出
-      var styleMatch = pdfHtml.match(/<style[^>]*>([\s\S]*?)<\/style>/);
-      var bodyMatch = pdfHtml.match(/<body[^>]*>([\s\S]*?)<\/body>/);
-
-      // アプリCSSのリセット（PDF領域だけ全リセット）
-      var scopedCss = '#__pdfWrap__, #__pdfWrap__ *{all:revert;box-sizing:border-box;background:initial;color:initial;}';
-      scopedCss += '#__pdfWrap__{font-family:sans-serif !important;background:#ffffff !important;color:#333 !important;}';
-      scopedCss += '#__pdfWrap__ .pdf-page{background:#ffffff !important;color:#333 !important;}';
-      scopedCss += (styleMatch ? styleMatch[1] : '');
-
-      var styleEl = document.createElement('style');
-      styleEl.id = '__pdfStyle__';
-      styleEl.textContent = scopedCss;
-      document.head.appendChild(styleEl);
-
-      tempWrap.innerHTML = bodyMatch ? bodyMatch[1] : pdfHtml;
-      document.body.appendChild(tempWrap);
-
-      console.log('[pdf] tempWrap size:', tempWrap.offsetWidth, 'x', tempWrap.offsetHeight);
+      var iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+      iframeDoc.open();
+      iframeDoc.write(pdfHtml);
+      iframeDoc.close();
 
       // 画像ロード待機
       await new Promise(function(resolve) {
-        var imgs = tempWrap.querySelectorAll('img');
-        if (!imgs.length) { setTimeout(resolve, 300); return; }
+        var imgs = iframeDoc.images;
+        if (!imgs.length) { setTimeout(resolve, 500); return; }
         var loaded = 0;
         var done = function() { loaded++; if (loaded >= imgs.length) setTimeout(resolve, 500); };
-        imgs.forEach(function(img) {
-          if (img.complete && img.naturalHeight > 0) done();
-          else { img.onload = done; img.onerror = done; }
-        });
+        for (var i = 0; i < imgs.length; i++) {
+          if (imgs[i].complete && imgs[i].naturalHeight > 0) done();
+          else { imgs[i].onload = done; imgs[i].onerror = done; }
+        }
       });
+      await new Promise(function(r) { setTimeout(r, 500); });
 
-      await new Promise(function(r) { setTimeout(r, 300); });
+      // iframe内の各ページをhtml2canvasでキャプチャ→jsPDFで結合
+      var pages = iframeDoc.querySelectorAll('.pdf-page');
+      console.log('[pdf] pages found:', pages.length);
 
-      var opt = {
-        margin: 0,
-        filename: fileName + '.pdf',
-        image: { type: 'jpeg', quality: 0.95 },
-        html2canvas: {
+      // jsPDFインスタンス（html2pdfバンドル内）
+      var jsPDF = window.jspdf && window.jspdf.jsPDF;
+      if (!jsPDF) {
+        console.error('[pdf] jsPDF not found');
+        document.body.removeChild(iframe);
+        throw new Error('jsPDF not available');
+      }
+
+      var pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait', compress: true });
+
+      for (var pi = 0; pi < pages.length; pi++) {
+        console.log('[pdf] capturing page', pi+1);
+        var canvas = await html2canvas(pages[pi], {
           scale: 2,
           useCORS: true,
           allowTaint: true,
           backgroundColor: '#ffffff',
-          logging: true,
+          logging: false,
           width: 794,
+          height: 1123,
           windowWidth: 794,
-        },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true },
-        pagebreak: { mode: ['css', 'legacy'], before: '.pdf-page' }
-      };
+          windowHeight: 1123,
+        });
+        console.log('[pdf] canvas', pi+1, canvas.width, 'x', canvas.height);
+        var imgData = canvas.toDataURL('image/jpeg', 0.92);
+        if (pi > 0) pdf.addPage();
+        pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
+      }
 
-      var pdfBlob = await html2pdf().set(opt).from(tempWrap).outputPdf('blob');
-
-      // クリーンアップ
-      document.body.removeChild(tempWrap);
-      document.head.removeChild(styleEl);
+      var pdfBlob = pdf.output('blob');
+      document.body.removeChild(iframe);
 
       console.log('[pdf-blob] PDF blob size:', pdfBlob.size, 'bytes');
 
