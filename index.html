@@ -1590,43 +1590,64 @@ async function savePdf() {
       var dateStr = deliveryDateStr.replace(/-/g, '');
       var fileName = '【' + state.center + '農産】まいばすけっと検質報告書_' + dateStr + '店着';
 
-      // 隠しコンテナにHTMLを描画
-      var hiddenDiv = document.createElement('div');
-      hiddenDiv.style.position = 'absolute';
-      hiddenDiv.style.left = '-9999px';
-      hiddenDiv.style.top = '0';
-      hiddenDiv.innerHTML = pdfHtml.replace(/^[\s\S]*<body[^>]*>([\s\S]*?)<\/body>[\s\S]*$/, '$1');
-      // styleも追加
-      var styleMatch = pdfHtml.match(/<style>([\s\S]*?)<\/style>/);
-      if (styleMatch) {
-        var styleEl = document.createElement('style');
-        styleEl.textContent = styleMatch[1];
-        hiddenDiv.appendChild(styleEl);
-      }
-      document.body.appendChild(hiddenDiv);
-
-      // html2pdfでPDF生成
       showLoading('PDF生成中...');
+
+      // iframeで完全レンダリングしてからhtml2pdf
+      var iframe = document.createElement('iframe');
+      iframe.style.position = 'fixed';
+      iframe.style.left = '0';
+      iframe.style.top = '0';
+      iframe.style.width = '210mm';
+      iframe.style.height = '297mm';
+      iframe.style.border = 'none';
+      iframe.style.opacity = '0';
+      iframe.style.pointerEvents = 'none';
+      iframe.style.zIndex = '-1';
+      document.body.appendChild(iframe);
+
+      // iframeにHTML書き込み
+      var iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+      iframeDoc.open();
+      iframeDoc.write(pdfHtml);
+      iframeDoc.close();
+
+      // 画像ロード完了を待つ
+      await new Promise(function(resolve) {
+        var imgs = iframeDoc.images;
+        if (!imgs.length) { setTimeout(resolve, 500); return; }
+        var loaded = 0;
+        var done = function() {
+          loaded++;
+          if (loaded >= imgs.length) setTimeout(resolve, 300);
+        };
+        for (var i = 0; i < imgs.length; i++) {
+          if (imgs[i].complete) done();
+          else { imgs[i].onload = done; imgs[i].onerror = done; }
+        }
+      });
+
       var opt = {
         margin: 0,
         filename: fileName + '.pdf',
         image: { type: 'jpeg', quality: 0.95 },
-        html2canvas: { scale: 2, useCORS: true, logging: false },
+        html2canvas: { scale: 2, useCORS: true, logging: false, windowWidth: 794 },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
         pagebreak: { mode: ['css', 'legacy'] }
       };
 
-      var worker = html2pdf().set(opt).from(hiddenDiv);
-      var pdfBlob = await worker.outputPdf('blob');
-      document.body.removeChild(hiddenDiv);
+      // iframeのbody要素をターゲット
+      var targetEl = iframeDoc.body;
+      var pdfBlob = await html2pdf().set(opt).from(targetEl).outputPdf('blob');
+
+      document.body.removeChild(iframe);
 
       // PDFをbase64にしてGASへ送信
-      var reader = new FileReader();
       var base64Pdf = await new Promise(function(resolve) {
+        var reader = new FileReader();
         reader.onload = function() { resolve(reader.result); };
         reader.readAsDataURL(pdfBlob);
       });
-      // savePdfToDriveを新PDF送信用に拡張
+
       if (typeof savePdfBlobToDrive === 'function') {
         savePdfBlobToDrive(state.center, fileName, base64Pdf, deliveryDateStr);
       }
