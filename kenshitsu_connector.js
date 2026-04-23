@@ -560,19 +560,28 @@ function clearProgress(center, date) {
 // ═══════════════════════════════════════════════════════════════
 
 async function gasSaveReport(center, date, staff, items) {
-  if (DEMO_MODE) return demoSaveReport();
+  console.log('[saveReport] 送信開始', { center: center, date: date, staff: staff, count: items.length });
 
-  var result = await callGAS("saveReport", {
+  // POST no-cors で送信（DEMO_MODEでも届く）
+  var payload = {
+    action: 'saveReport',
     center: center, date: date, staff: staff,
     items: JSON.stringify(items),
-  });
+  };
 
-  if (!result) return demoSaveReport();
-
-  if (result.success) {
-    return { ok: true, count: result.data.count, defects: result.data.defects };
+  try {
+    await fetch(GAS_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload),
+    });
+    console.log('[saveReport] POST sent (no-cors)');
+    return { ok: true, fireAndForget: true };
+  } catch(e) {
+    console.error('[saveReport] POST failed:', e.message);
   }
-  return { ok: false, message: result.error };
+  return { ok: false, message: 'POST failed' };
 }
 
 function demoSaveReport() {
