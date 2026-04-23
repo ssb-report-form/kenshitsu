@@ -1592,64 +1592,68 @@ async function savePdf() {
 
       showLoading('PDF生成中...');
 
-      // iframeで完全レンダリングしてからhtml2pdf
-      var iframe = document.createElement('iframe');
-      iframe.style.position = 'fixed';
-      iframe.style.left = '0';
-      iframe.style.top = '0';
-      iframe.style.width = '210mm';
-      iframe.style.height = '297mm';
-      iframe.style.border = 'none';
-      iframe.style.opacity = '0';
-      iframe.style.pointerEvents = 'none';
-      iframe.style.zIndex = '-1';
-      document.body.appendChild(iframe);
+      // bodyの末尾に可視の一時コンテナを作成（html2canvasは表示中要素のみ処理できる）
+      var tempContainer = document.createElement('div');
+      tempContainer.id = 'pdfTempContainer';
+      tempContainer.style.cssText = 'position:absolute;left:-10000px;top:0;width:210mm;background:#fff;';
+      document.body.appendChild(tempContainer);
 
-      // iframeにHTML書き込み
-      var iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-      iframeDoc.open();
-      iframeDoc.write(pdfHtml);
-      iframeDoc.close();
+      // styleとbodyを分離して挿入
+      var styleMatch = pdfHtml.match(/<style[^>]*>([\s\S]*?)<\/style>/);
+      var bodyMatch = pdfHtml.match(/<body[^>]*>([\s\S]*?)<\/body>/);
 
-      // 画像ロード完了を待つ
+      var tempStyle = document.createElement('style');
+      tempStyle.id = 'pdfTempStyle';
+      tempStyle.textContent = '#pdfTempContainer{font-family:sans-serif}' + (styleMatch ? styleMatch[1] : '');
+      document.head.appendChild(tempStyle);
+
+      tempContainer.innerHTML = bodyMatch ? bodyMatch[1] : pdfHtml;
+
+      // 画像ロード待機
       await new Promise(function(resolve) {
-        var imgs = iframeDoc.images;
-        if (!imgs.length) { setTimeout(resolve, 500); return; }
+        var imgs = tempContainer.querySelectorAll('img');
+        if (!imgs.length) { setTimeout(resolve, 300); return; }
         var loaded = 0;
         var done = function() {
           loaded++;
           if (loaded >= imgs.length) setTimeout(resolve, 300);
         };
-        for (var i = 0; i < imgs.length; i++) {
-          if (imgs[i].complete) done();
-          else { imgs[i].onload = done; imgs[i].onerror = done; }
-        }
+        imgs.forEach(function(img) {
+          if (img.complete && img.naturalHeight > 0) done();
+          else { img.onload = done; img.onerror = done; }
+        });
       });
 
       var opt = {
         margin: 0,
         filename: fileName + '.pdf',
         image: { type: 'jpeg', quality: 0.95 },
-        html2canvas: { scale: 2, useCORS: true, logging: false, windowWidth: 794 },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        html2canvas: { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff', width: 794, windowWidth: 794 },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true },
         pagebreak: { mode: ['css', 'legacy'] }
       };
 
-      // iframeのbody要素をターゲット
-      var targetEl = iframeDoc.body;
-      var pdfBlob = await html2pdf().set(opt).from(targetEl).outputPdf('blob');
+      var pdfBlob = await html2pdf().set(opt).from(tempContainer).outputPdf('blob');
 
-      document.body.removeChild(iframe);
+      // クリーンアップ
+      document.body.removeChild(tempContainer);
+      document.head.removeChild(tempStyle);
 
-      // PDFをbase64にしてGASへ送信
-      var base64Pdf = await new Promise(function(resolve) {
-        var reader = new FileReader();
-        reader.onload = function() { resolve(reader.result); };
-        reader.readAsDataURL(pdfBlob);
-      });
+      console.log('[pdf-blob] PDF blob size:', pdfBlob.size, 'bytes');
 
-      if (typeof savePdfBlobToDrive === 'function') {
-        savePdfBlobToDrive(state.center, fileName, base64Pdf, deliveryDateStr);
+      if (pdfBlob.size < 1000) {
+        console.warn('[pdf-blob] PDF seems empty');
+        toast('PDF生成に失敗しました', 'error');
+      } else {
+        var base64Pdf = await new Promise(function(resolve) {
+          var reader = new FileReader();
+          reader.onload = function() { resolve(reader.result); };
+          reader.readAsDataURL(pdfBlob);
+        });
+
+        if (typeof savePdfBlobToDrive === 'function') {
+          savePdfBlobToDrive(state.center, fileName, base64Pdf, deliveryDateStr);
+        }
       }
     }
     done++;
