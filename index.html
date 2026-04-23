@@ -759,6 +759,23 @@ let state = {
 // Navigation
 // ══════════════════════════════════════
 function goStep(n) {
+  // ステップ3（検査入力）へ進む時、対象期間内のマスタが取込済みかチェック
+  if (n === 3) {
+    var inspDate = document.getElementById('inspDate').value;
+    var delivery = calcDeliveryDate(inspDate);
+    var cache = null;
+    try {
+      var raw = localStorage.getItem('kenshitsu_master_' + state.center);
+      if (raw) cache = JSON.parse(raw);
+    } catch(e) {}
+    var dr = cache && cache.dateRange;
+    var valid = dr && dr.from && dr.to && delivery >= dr.from && delivery <= dr.to && cache.items && cache.items.length > 0;
+    if (!valid) {
+      toast('対象日（' + delivery + '）の原価売価指示書を取込してください','error');
+      return;
+    }
+  }
+
   state.step = n;
   const panels = ['p-login','p-info','p-import','p-inspect','p-confirm'];
   panels.forEach(id => document.getElementById(id).classList.remove('on'));
