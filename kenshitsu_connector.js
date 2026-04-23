@@ -562,11 +562,21 @@ function clearProgress(center, date) {
 async function gasSaveReport(center, date, staff, items) {
   console.log('[saveReport] 送信開始', { center: center, date: date, staff: staff, count: items.length });
 
+  // 画像データを除去（画像は別途gasSaveDefectImageで送信済み）
+  var lightItems = items.map(function(it) {
+    var copy = {};
+    for (var k in it) {
+      if (k === 'inspPhotos' || k === 'defectPhotos') continue;
+      copy[k] = it[k];
+    }
+    return copy;
+  });
+
   // POST no-cors で送信（DEMO_MODEでも届く）
   var payload = {
     action: 'saveReport',
     center: center, date: date, staff: staff,
-    items: JSON.stringify(items),
+    items: JSON.stringify(lightItems),
   };
 
   try {

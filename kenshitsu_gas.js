@@ -518,6 +518,18 @@ function handleSaveReport(data) {
       result, reason, item.comment || ""
     ]);
 
+    // 最後の行にフォーマット適用（不良品は赤系背景）
+    var lastRow = reportSheet.getLastRow();
+    var rng = reportSheet.getRange(lastRow, 1, 1, 15);
+    rng.setBorder(true, true, true, true, true, true, "#cccccc", SpreadsheetApp.BorderStyle.SOLID);
+    rng.setVerticalAlignment("middle");
+    if (defectQty > 0) {
+      rng.setBackground("#fdecea");
+      reportSheet.getRange(lastRow, 13, 1, 1).setFontWeight("bold").setFontColor("#c0392b");
+    } else if (lastRow % 2 === 0) {
+      rng.setBackground("#f8f9fa");
+    }
+
     // 検質不良シート（不良品のみ）
     if (defectQty > 0) {
       defectSheet.appendRow([
@@ -526,8 +538,18 @@ function handleSaveReport(data) {
         item.unit || "", totalInspQty,
         arrivalQty, inspQty, defectQty, reason
       ]);
+      var dLastRow = defectSheet.getLastRow();
+      var dRng = defectSheet.getRange(dLastRow, 1, 1, 11);
+      dRng.setBorder(true, true, true, true, true, true, "#cccccc", SpreadsheetApp.BorderStyle.SOLID);
+      dRng.setVerticalAlignment("middle");
+      if (dLastRow % 2 === 0) dRng.setBackground("#fef5f4");
+      defectSheet.getRange(dLastRow, 10, 1, 1).setFontWeight("bold").setFontColor("#c0392b");
     }
   });
+
+  // 列幅を調整
+  applyColumnWidths(reportSheet, [140, 100, 90, 90, 150, 100, 180, 80, 70, 70, 70, 70, 70, 150, 200]);
+  applyColumnWidths(defectSheet, [100, 180, 90, 150, 100, 80, 120, 70, 90, 70, 180]);
 
   return ok({
     saved: true,
@@ -1062,13 +1084,29 @@ function getOrCreateSheet(ss, name, headers) {
     sh = ss.insertSheet(name);
     sh.appendRow(headers);
     sh.setFrozenRows(1);
-    // ヘッダー行を色付け
-    sh.getRange(1, 1, 1, headers.length)
-      .setBackground("#1e2e4a")
-      .setFontColor("#dde6f4")
-      .setFontWeight("bold");
   }
+  // ヘッダー行を毎回整形（初期&上書きでもOK）
+  var headerColor = (name.indexOf("不良") >= 0) ? "#c0392b" : "#1a5c2e";
+  sh.getRange(1, 1, 1, headers.length)
+    .setBackground(headerColor)
+    .setFontColor("#ffffff")
+    .setFontWeight("bold")
+    .setHorizontalAlignment("center")
+    .setVerticalAlignment("middle")
+    .setFontSize(11);
+  sh.setRowHeight(1, 32);
   return sh;
+}
+
+// 列幅を指定
+function applyColumnWidths(sheet, widths) {
+  try {
+    for (var i = 0; i < widths.length; i++) {
+      sheet.setColumnWidth(i + 1, widths[i]);
+    }
+  } catch (e) {
+    Logger.log("setColumnWidth error: " + e);
+  }
 }
 
 function escapeHtml(str) {
