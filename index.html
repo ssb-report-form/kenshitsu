@@ -471,7 +471,7 @@ textarea.form-input{resize:vertical;min-height:80px}
     </div>
   </div>
 
-  <button class="btn btn-gold" id="importBtn" onclick="doImport()">
+  <button class="btn btn-gold" id="importBtn" onclick="doImport()" style="font-size:18px;padding:18px;box-shadow:0 4px 16px rgba(200,151,58,.4);font-weight:700">
     📥 原価売価指示書を取込
   </button>
 
@@ -518,7 +518,7 @@ textarea.form-input{resize:vertical;min-height:80px}
 
   <div class="sec-h" style="display:flex;align-items:center;justify-content:space-between">
     <span>送信履歴</span>
-    <button class="btn btn-outline" onclick="toggleHistory()" id="historyToggle" style="font-size:10px;padding:4px 10px">▶ 表示</button>
+    <button onclick="toggleHistory()" id="historyToggle" style="font-size:12px;padding:6px 14px;background:var(--bbg);color:var(--blu);border:1px solid rgba(75,142,255,.4);border-radius:8px;font-weight:700;cursor:pointer">▶ 送信履歴を表示</button>
   </div>
   <div class="card" id="historyList" style="padding:10px;display:none">
     <!-- dynamically populated -->
@@ -536,7 +536,7 @@ textarea.form-input{resize:vertical;min-height:80px}
   <div class="pg-sub" id="defectSub"></div>
 
   <div class="card" style="margin-bottom:10px">
-    <button class="btn btn-gold" onclick="loadInspectionsFromSheet()" id="loadInspBtn">📥 検査済みデータを読込</button>
+    <button class="btn btn-gold" onclick="loadInspectionsFromSheet()" id="loadInspBtn" style="font-size:18px;padding:18px;box-shadow:0 4px 16px rgba(200,151,58,.4);font-weight:700">📥 検査済みデータを読込</button>
     <div id="loadInspStatus" style="font-size:11px;color:var(--tx3);margin-top:6px;text-align:center"></div>
   </div>
 
@@ -573,6 +573,10 @@ textarea.form-input{resize:vertical;min-height:80px}
     <div class="summary-row"><div class="summary-label">検査日</div><div class="summary-val" id="cfDate">--</div></div>
     <div class="summary-row"><div class="summary-label">担当者</div><div class="summary-val" id="cfStaff">--</div></div>
     <div class="summary-row"><div class="summary-label">総品目数</div><div class="summary-val" id="cfTotal">--</div></div>
+    <div class="summary-row"><div class="summary-label">入荷数合計</div><div class="summary-val" id="cfArrival">--</div></div>
+    <div class="summary-row"><div class="summary-label">検質数合計</div><div class="summary-val" id="cfInsp">--</div></div>
+    <div class="summary-row"><div class="summary-label">不良数合計</div><div class="summary-val" id="cfDefect">--</div></div>
+    <div class="summary-row"><div class="summary-label">不良率</div><div class="summary-val" id="cfDefectRate">--</div></div>
     <div class="summary-row">
       <div class="summary-label">結果</div>
       <div id="cfResult">--</div>
@@ -586,7 +590,7 @@ textarea.form-input{resize:vertical;min-height:80px}
 
   <div style="display:flex;align-items:center;justify-content:space-between;margin:16px 0 8px">
     <span style="font-size:11px;font-weight:500;color:var(--tx3);text-transform:uppercase;letter-spacing:.08em">PDF プレビュー</span>
-    <button class="btn btn-outline" onclick="togglePreview()" id="previewToggle" style="font-size:10px;padding:4px 10px">▶ 表示</button>
+    <button class="btn btn-outline" onclick="togglePreview()" id="previewToggle" style="font-size:12px;padding:6px 14px">▶ PDF表示</button>
   </div>
   <div id="pdfPreview" class="card" style="padding:0;overflow:hidden;display:none">
     <!-- generated at runtime -->
@@ -1693,11 +1697,11 @@ function toggleHistory() {
   var btn = document.getElementById('historyToggle');
   if (el.style.display === 'none') {
     el.style.display = '';
-    btn.textContent = '▼ 非表示';
+    btn.textContent = '▼ 送信履歴を非表示';
     renderHistory();
   } else {
     el.style.display = 'none';
-    btn.textContent = '▶ 表示';
+    btn.textContent = '▶ 送信履歴を表示';
   }
 }
 
@@ -1941,10 +1945,27 @@ function buildConfirm() {
   var fail = items.filter(function(i) { return Number(i.defectQty) > 0; }).length;
   var total = items.length;
 
+  // 合計計算
+  var totalArrival = 0, totalInsp = 0, totalDefect = 0;
+  items.forEach(function(i) {
+    totalArrival += Number(i.arrivalQty) || 0;
+    totalInsp += Number(i.inspQty) || 0;
+    totalDefect += Number(i.defectQty) || 0;
+  });
+  var defectRate = totalInsp > 0 ? (Math.round(totalDefect / totalInsp * 1000) / 10) : 0;
+
   document.getElementById('cfCenter').textContent = state.center;
   document.getElementById('cfDate').textContent = document.getElementById('inspDate').value;
   document.getElementById('cfStaff').textContent = document.getElementById('staffSelect').value || '未選択';
   document.getElementById('cfTotal').textContent = total + '件';
+  document.getElementById('cfArrival').textContent = totalArrival.toLocaleString() + ' ps';
+  document.getElementById('cfInsp').textContent = totalInsp.toLocaleString() + ' ps';
+  var defectEl = document.getElementById('cfDefect');
+  defectEl.textContent = totalDefect + ' ps';
+  defectEl.style.color = totalDefect > 0 ? 'var(--red)' : '';
+  var rateEl = document.getElementById('cfDefectRate');
+  rateEl.textContent = defectRate + '%';
+  rateEl.style.color = defectRate > 0 ? 'var(--red)' : '';
 
   var resultEl = document.getElementById('cfResult');
   if (fail > 0) {
@@ -2142,11 +2163,11 @@ function togglePreview() {
   var btn = document.getElementById('previewToggle');
   if (el.style.display === 'none') {
     el.style.display = '';
-    btn.textContent = '▼ 非表示';
+    btn.textContent = '▼ PDF非表示';
     buildPdfPreview();
   } else {
     el.style.display = 'none';
-    btn.textContent = '▶ 表示';
+    btn.textContent = '▶ PDF表示';
   }
 }
 
