@@ -568,18 +568,48 @@ textarea.form-input{resize:vertical;min-height:80px}
   <div class="pg-sub">内容を確認してPDFをDriveに保存します</div>
 
   <div class="sec-h">検査サマリー</div>
-  <div class="card">
-    <div class="summary-row"><div class="summary-label">センター</div><div class="summary-val" id="cfCenter">--</div></div>
-    <div class="summary-row"><div class="summary-label">検査日</div><div class="summary-val" id="cfDate">--</div></div>
-    <div class="summary-row"><div class="summary-label">担当者</div><div class="summary-val" id="cfStaff">--</div></div>
-    <div class="summary-row"><div class="summary-label">総品目数</div><div class="summary-val" id="cfTotal">--</div></div>
-    <div class="summary-row"><div class="summary-label">入荷数合計</div><div class="summary-val" id="cfArrival">--</div></div>
-    <div class="summary-row"><div class="summary-label">検質数合計</div><div class="summary-val" id="cfInsp">--</div></div>
-    <div class="summary-row"><div class="summary-label">不良数合計</div><div class="summary-val" id="cfDefect">--</div></div>
-    <div class="summary-row"><div class="summary-label">不良率</div><div class="summary-val" id="cfDefectRate">--</div></div>
-    <div class="summary-row">
-      <div class="summary-label">結果</div>
-      <div id="cfResult">--</div>
+  <div class="card" style="padding:14px">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div style="background:var(--s2);border-radius:8px;padding:10px 12px">
+        <div style="font-size:10px;color:var(--tx3);margin-bottom:4px">センター</div>
+        <div style="font-size:15px;font-weight:700" id="cfCenter">--</div>
+      </div>
+      <div style="background:var(--s2);border-radius:8px;padding:10px 12px">
+        <div style="font-size:10px;color:var(--tx3);margin-bottom:4px">担当者</div>
+        <div style="font-size:15px;font-weight:700" id="cfStaff">--</div>
+      </div>
+      <div style="background:var(--s2);border-radius:8px;padding:10px 12px">
+        <div style="font-size:10px;color:var(--tx3);margin-bottom:4px">検査日</div>
+        <div style="font-size:15px;font-weight:700" id="cfDate">--</div>
+      </div>
+      <div style="background:var(--s2);border-radius:8px;padding:10px 12px">
+        <div style="font-size:10px;color:var(--tx3);margin-bottom:4px">店着日</div>
+        <div style="font-size:15px;font-weight:700" id="cfDelivery">--</div>
+      </div>
+      <div style="background:var(--s2);border-radius:8px;padding:10px 12px">
+        <div style="font-size:10px;color:var(--tx3);margin-bottom:4px">総品目数</div>
+        <div style="font-size:15px;font-weight:700" id="cfTotal">--</div>
+      </div>
+      <div style="background:var(--s2);border-radius:8px;padding:10px 12px">
+        <div style="font-size:10px;color:var(--tx3);margin-bottom:4px">結果</div>
+        <div id="cfResult" style="font-size:13px">--</div>
+      </div>
+      <div style="background:var(--s2);border-radius:8px;padding:10px 12px">
+        <div style="font-size:10px;color:var(--tx3);margin-bottom:4px">入荷数計</div>
+        <div style="font-size:15px;font-weight:700" id="cfArrival">--</div>
+      </div>
+      <div style="background:var(--s2);border-radius:8px;padding:10px 12px">
+        <div style="font-size:10px;color:var(--tx3);margin-bottom:4px">検質数計</div>
+        <div style="font-size:15px;font-weight:700;color:var(--grn)" id="cfInsp">--</div>
+      </div>
+      <div style="background:var(--s2);border-radius:8px;padding:10px 12px">
+        <div style="font-size:10px;color:var(--tx3);margin-bottom:4px">不良数計</div>
+        <div style="font-size:15px;font-weight:700" id="cfDefect">--</div>
+      </div>
+      <div style="background:var(--s2);border-radius:8px;padding:10px 12px">
+        <div style="font-size:10px;color:var(--tx3);margin-bottom:4px">不良率</div>
+        <div style="font-size:15px;font-weight:700" id="cfDefectRate">--</div>
+      </div>
     </div>
   </div>
 
@@ -590,7 +620,7 @@ textarea.form-input{resize:vertical;min-height:80px}
 
   <div style="display:flex;align-items:center;justify-content:space-between;margin:16px 0 8px">
     <span style="font-size:11px;font-weight:500;color:var(--tx3);text-transform:uppercase;letter-spacing:.08em">PDF プレビュー</span>
-    <button class="btn btn-outline" onclick="togglePreview()" id="previewToggle" style="font-size:12px;padding:6px 14px">▶ PDF表示</button>
+    <button onclick="togglePreview()" id="previewToggle" style="font-size:13px;padding:8px 16px;background:var(--bbg);color:var(--blu);border:1px solid rgba(75,142,255,.4);border-radius:8px;font-weight:700;cursor:pointer">▶ PDF表示</button>
   </div>
   <div id="pdfPreview" class="card" style="padding:0;overflow:hidden;display:none">
     <!-- generated at runtime -->
@@ -1954,8 +1984,10 @@ function buildConfirm() {
   });
   var defectRate = totalInsp > 0 ? (Math.round(totalDefect / totalInsp * 1000) / 10) : 0;
 
-  document.getElementById('cfCenter').textContent = state.center;
-  document.getElementById('cfDate').textContent = document.getElementById('inspDate').value;
+  var inspDateStr = document.getElementById('inspDate').value;
+  document.getElementById('cfCenter').textContent = state.center + 'センター';
+  document.getElementById('cfDate').textContent = inspDateStr;
+  document.getElementById('cfDelivery').textContent = calcDeliveryDate(inspDateStr);
   document.getElementById('cfStaff').textContent = document.getElementById('staffSelect').value || '未選択';
   document.getElementById('cfTotal').textContent = total + '件';
   document.getElementById('cfArrival').textContent = totalArrival.toLocaleString() + ' ps';
