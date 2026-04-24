@@ -95,6 +95,10 @@ function doPost(e) {
       case "importExcel":  return handleImportExcel(data);
       case "listFiles":    return handleListFiles(data);
       case "saveReport":   return handleSaveReport(data);
+      case "saveInspection":   return handleSaveInspection(data);
+      case "getInspections":   return handleGetInspections(data);
+      case "clearInspections": return handleClearInspections(data);
+      case "deleteInspection": return handleDeleteInspection(data);
       case "saveDefectImage": return handleSaveDefectImage(data);
       case "savePdfHtml":    return handleSavePdfHtml(data);
       case "savePdfBlob":    return handleSavePdfBlob(data);
@@ -136,6 +140,9 @@ function doGet(e) {
     case "savePdf":
       var pdfItems = e.parameter.items ? JSON.parse(e.parameter.items) : [];
       result = handleSavePdf({ center: center, date: e.parameter.date || "", staff: e.parameter.staff || "", memo: "", items: pdfItems });
+      break;
+    case "getInspections":
+      result = handleGetInspections({ center: center, deliveryDate: e.parameter.deliveryDate || "" });
       break;
     case "ping":
       result = ok({ status: "alive", timestamp: new Date().toISOString() });
@@ -484,9 +491,9 @@ function handleSaveReport(data) {
     "結果", "不良理由", "コメント"
   ]);
 
-  // ── シート「検質不良」 ── 不良品のみ
-  var defectSheet = getOrCreateSheet(ss, "検質不良", [
-    "日付(店着日)", "取引先名", "商品コード", "商品名", "産地",
+  // ── シート「検質不良」 ── 不良品のみ（1行目:合計、2行目:ヘッダー、3行目〜:データ）
+  var defectSheet = getOrCreateDefectSheet(ss, "検質不良", [
+    "店着日", "取引先名", "商品コード", "商品名", "産地",
     "発注単位", "対象数(検質数合計)", "入荷数", "検質数(10%)",
     "不良数", "不良理由"
   ]);
@@ -518,32 +525,37 @@ function handleSaveReport(data) {
       result, reason, item.comment || ""
     ]);
 
-    // 最後の行にフォーマット適用（不良品は赤系背景）
+    // 最後の行にフォーマット適用（モノクロ）
     var lastRow = reportSheet.getLastRow();
     var rng = reportSheet.getRange(lastRow, 1, 1, 15);
-    rng.setBorder(true, true, true, true, true, true, "#cccccc", SpreadsheetApp.BorderStyle.SOLID);
+    rng.setBorder(true, true, true, true, true, true, STYLE.BORDER, SpreadsheetApp.BorderStyle.SOLID);
     rng.setVerticalAlignment("middle");
     if (defectQty > 0) {
-      rng.setBackground("#fdecea");
-      reportSheet.getRange(lastRow, 13, 1, 1).setFontWeight("bold").setFontColor("#c0392b");
+      // 不良品: 左端に太い縦線アクセント + 軽い背景
+      rng.setBackground("#edf2f7");
+      reportSheet.getRange(lastRow, 1, 1, 15).setBorder(null, true, null, null, null, null, STYLE.DEFECT_ACCENT, SpreadsheetApp.BorderStyle.SOLID_THICK);
+      reportSheet.getRange(lastRow, 13, 1, 1).setFontWeight("bold");
     } else if (lastRow % 2 === 0) {
-      rng.setBackground("#f8f9fa");
+      rng.setBackground(STYLE.STRIPE);
     }
 
     // 検質不良シート（不良品のみ）
     if (defectQty > 0) {
+      // A列は Date オブジェクトで保存（集計式のTEXT(..., "yyyy-mm")が確実に動作するため）
       defectSheet.appendRow([
-        deliveryStr, item.supplier || "",
+        deliveryDate, item.supplier || "",
         item.code || "", item.name || "", item.origin || "",
         item.unit || "", totalInspQty,
         arrivalQty, inspQty, defectQty, reason
       ]);
       var dLastRow = defectSheet.getLastRow();
+      // A列を日付書式に設定
+      defectSheet.getRange(dLastRow, 1).setNumberFormat("yyyy-mm-dd");
       var dRng = defectSheet.getRange(dLastRow, 1, 1, 11);
-      dRng.setBorder(true, true, true, true, true, true, "#cccccc", SpreadsheetApp.BorderStyle.SOLID);
+      dRng.setBorder(true, true, true, true, true, true, STYLE.BORDER, SpreadsheetApp.BorderStyle.SOLID);
       dRng.setVerticalAlignment("middle");
-      if (dLastRow % 2 === 0) dRng.setBackground("#fef5f4");
-      defectSheet.getRange(dLastRow, 10, 1, 1).setFontWeight("bold").setFontColor("#c0392b");
+      if (dLastRow % 2 === 0) dRng.setBackground(STYLE.STRIPE);
+      defectSheet.getRange(dLastRow, 10, 1, 1).setFontWeight("bold");
     }
   });
 
@@ -562,7 +574,158 @@ function handleSaveReport(data) {
 
 
 // ═══════════════════════════════════════════════════════════════
-// 5b. HTML→PDF変換→Drive保存（ブラウザからHTML受け取り）
+// 5a. 検査中シートへの保存（検査タブから1商品ずつ送信）
+// ═══════════════════════════════════════════════════════════════
+
+function handleSaveInspection(data) {
+  var center = data.center;
+  var date = data.date;  // 検査日
+  var staff = data.staff || "";
+  var item = data.item;
+  if (typeof item === "string") item = JSON.parse(item);
+  if (!item) return error("商品データが空です");
+
+  // 店着日 = 検査日+1
+  var inspDate = new Date(date);
+  var deliveryDate = new Date(inspDate);
+  deliveryDate.setDate(deliveryDate.getDate() + 1);
+  var deliveryStr = Utilities.formatDate(deliveryDate, "Asia/Tokyo", "yyyy-MM-dd");
+
+  var ssId = CONFIG.REPORT_SPREADSHEETS[center];
+  if (!ssId) return error("センター「" + center + "」のスプレッドシートIDが未設定です");
+  var ss = SpreadsheetApp.openById(ssId);
+
+  // 検査中シートを取得 or 作成
+  var sh = getOrCreateSheet(ss, "検査中", [
+    "ID", "タイムスタンプ", "店着日", "担当者", "商品コード", "商品名",
+    "産地", "取引先", "発注単位", "入荷数", "検質数", "状態"
+  ]);
+
+  var timestamp = new Date().toLocaleString("ja-JP");
+  var id = String(new Date().getTime()) + "_" + Math.floor(Math.random() * 10000);
+  sh.appendRow([
+    id, timestamp, deliveryStr, staff,
+    item.code || "", item.name || "", item.origin || "",
+    item.supplier || "", item.unit || "",
+    Number(item.arrivalQty) || 0, Number(item.inspQty) || 0, "検査中"
+  ]);
+
+  var lastRow = sh.getLastRow();
+  sh.getRange(lastRow, 3).setNumberFormat("yyyy-mm-dd");
+  var rng = sh.getRange(lastRow, 1, 1, 12);
+  rng.setBorder(true, true, true, true, true, true, STYLE.BORDER, SpreadsheetApp.BorderStyle.SOLID);
+  if (lastRow % 2 === 0) rng.setBackground(STYLE.STRIPE);
+
+  return ok({ saved: true, id: id, deliveryDate: deliveryStr });
+}
+
+
+// ═══════════════════════════════════════════════════════════════
+// 5b. 検査中シートから当日分読込（不良タブで使用）
+// ═══════════════════════════════════════════════════════════════
+
+function handleGetInspections(data) {
+  var center = data.center;
+  var deliveryDate = data.deliveryDate || "";  // YYYY-MM-DD
+
+  var ssId = CONFIG.REPORT_SPREADSHEETS[center];
+  if (!ssId) return error("センター未設定");
+  var ss = SpreadsheetApp.openById(ssId);
+
+  var sh = null;
+  var all = ss.getSheets();
+  for (var i = 0; i < all.length; i++) {
+    if (all[i].getName() === "検査中") { sh = all[i]; break; }
+  }
+  if (!sh) return ok({ items: [] });
+
+  var rows = sh.getDataRange().getValues();
+  var items = [];
+  for (var r = 1; r < rows.length; r++) {
+    var row = rows[r];
+    var dd = row[2];
+    if (dd instanceof Date) {
+      dd = Utilities.formatDate(dd, "Asia/Tokyo", "yyyy-MM-dd");
+    }
+    // 当日指定ありなら、店着日一致のみ
+    if (deliveryDate && dd !== deliveryDate) continue;
+    // 不良入力済みは除外
+    if (row[11] === "不良入力済") continue;
+
+    items.push({
+      id: row[0],
+      timestamp: row[1],
+      deliveryDate: dd,
+      staff: row[3],
+      code: row[4],
+      name: row[5],
+      origin: row[6],
+      supplier: row[7],
+      unit: row[8],
+      arrivalQty: Number(row[9]) || 0,
+      inspQty: Number(row[10]) || 0,
+      status: row[11]
+    });
+  }
+  return ok({ items: items, center: center });
+}
+
+
+// ═══════════════════════════════════════════════════════════════
+// 5c. 検査中シートの1件削除（履歴から個別削除）
+// ═══════════════════════════════════════════════════════════════
+
+function handleDeleteInspection(data) {
+  var center = data.center;
+  var id = data.id;
+
+  var ssId = CONFIG.REPORT_SPREADSHEETS[center];
+  if (!ssId) return error("センター未設定");
+  var ss = SpreadsheetApp.openById(ssId);
+  var sh = ss.getSheetByName("検査中");
+  if (!sh) return ok({ deleted: 0 });
+
+  var rows = sh.getDataRange().getValues();
+  for (var r = rows.length - 1; r >= 1; r--) {
+    if (String(rows[r][0]) === String(id)) {
+      sh.deleteRow(r + 1);
+      return ok({ deleted: 1 });
+    }
+  }
+  return ok({ deleted: 0 });
+}
+
+
+// ═══════════════════════════════════════════════════════════════
+// 5d. 検査中シートを全クリア（特定日付 or 全部）
+// ═══════════════════════════════════════════════════════════════
+
+function handleClearInspections(data) {
+  var center = data.center;
+  var deliveryDate = data.deliveryDate || "";  // 指定時はその日付のみ
+
+  var ssId = CONFIG.REPORT_SPREADSHEETS[center];
+  if (!ssId) return error("センター未設定");
+  var ss = SpreadsheetApp.openById(ssId);
+  var sh = ss.getSheetByName("検査中");
+  if (!sh) return ok({ deleted: 0 });
+
+  var rows = sh.getDataRange().getValues();
+  var deleted = 0;
+  for (var r = rows.length - 1; r >= 1; r--) {
+    var dd = rows[r][2];
+    if (dd instanceof Date) dd = Utilities.formatDate(dd, "Asia/Tokyo", "yyyy-MM-dd");
+    if (!deliveryDate || dd === deliveryDate) {
+      sh.deleteRow(r + 1);
+      deleted++;
+    }
+  }
+  return ok({ deleted: deleted });
+}
+
+
+// ═══════════════════════════════════════════════════════════════
+// 5e. HTML→PDF変換→Drive保存（ブラウザからHTML受け取り）
 // ═══════════════════════════════════════════════════════════════
 
 function handleSavePdfHtml(data) {
@@ -1071,6 +1234,17 @@ function buildPhotoCell(dataUrl, label, borderColor, bgColor) {
     + label + '</td>';
 }
 
+// スタイル定数（モノクロ・スタイリッシュ）
+var STYLE = {
+  HEADER_BG: "#2c3e50",       // ダークネイビー
+  HEADER_FG: "#ffffff",       // 白
+  SUMMARY_BG: "#34495e",      // 少し明るいネイビー
+  SUMMARY_FG: "#ffffff",
+  BORDER: "#bdc3c7",          // 薄グレー
+  STRIPE: "#f5f6f7",          // 交互行用の極薄グレー
+  DEFECT_ACCENT: "#4a5568",   // 不良行アクセント（黒に近いグレー）
+};
+
 function getOrCreateSheet(ss, name, headers) {
   var sh = null;
   var allSheets = ss.getSheets();
@@ -1085,16 +1259,86 @@ function getOrCreateSheet(ss, name, headers) {
     sh.appendRow(headers);
     sh.setFrozenRows(1);
   }
-  // ヘッダー行を毎回整形（初期&上書きでもOK）
-  var headerColor = (name.indexOf("不良") >= 0) ? "#c0392b" : "#1a5c2e";
+  // ヘッダー整形（モノクロスタイル）
   sh.getRange(1, 1, 1, headers.length)
-    .setBackground(headerColor)
-    .setFontColor("#ffffff")
+    .setBackground(STYLE.HEADER_BG)
+    .setFontColor(STYLE.HEADER_FG)
+    .setFontWeight("bold")
+    .setHorizontalAlignment("center")
+    .setVerticalAlignment("middle")
+    .setFontSize(11)
+    .setBorder(true, true, true, true, false, false, STYLE.BORDER, SpreadsheetApp.BorderStyle.SOLID);
+  sh.setRowHeight(1, 32);
+  return sh;
+}
+
+// 検質不良シート専用（1行目:合計、2行目:ヘッダー）
+function getOrCreateDefectSheet(ss, name, headers) {
+  var sh = null;
+  var allSheets = ss.getSheets();
+  for (var i = 0; i < allSheets.length; i++) {
+    if (allSheets[i].getName() === name) {
+      sh = allSheets[i];
+      break;
+    }
+  }
+  var needInit = false;
+  if (!sh) {
+    sh = ss.insertSheet(name);
+    needInit = true;
+  } else {
+    // 既存シート: 1行目が合計行でなければ初期化が必要
+    var cell = sh.getRange(1, 1).getValue();
+    if (cell !== "対象月（合計）") needInit = true;
+  }
+
+  if (needInit) {
+    sh.clear();
+    // 1行目: 合計行
+    var now = new Date();
+    var defaultMonth = Utilities.formatDate(now, "Asia/Tokyo", "yyyy-MM");
+    var row1 = ["対象月（合計）", defaultMonth, "", "", "", "", "", "", "", "", ""];
+    sh.getRange(1, 1, 1, row1.length).setValues([row1]);
+
+    // 2行目: ヘッダー
+    sh.getRange(2, 1, 1, headers.length).setValues([headers]);
+    sh.setFrozenRows(2);
+  }
+
+  // ヘッダー(2行目)も毎回更新
+  sh.getRange(2, 1, 1, headers.length).setValues([headers]);
+
+  // 合計セルの式を毎回更新（Date/テキスト両対応）
+  var sumFormula = function(col) {
+    return '=IFERROR(SUMPRODUCT((TEXT($A$3:$A,"yyyy-mm")=TEXT($B$1,"yyyy-mm"))*' + col + '3:' + col + '),0)';
+  };
+  sh.getRange("G1").setFormula(sumFormula("G"));
+  sh.getRange("H1").setFormula(sumFormula("H"));
+  sh.getRange("I1").setFormula(sumFormula("I"));
+  sh.getRange("J1").setFormula(sumFormula("J"));
+
+  // 1行目のスタイル（合計行）
+  sh.getRange(1, 1, 1, headers.length)
+    .setBackground(STYLE.SUMMARY_BG)
+    .setFontColor(STYLE.SUMMARY_FG)
     .setFontWeight("bold")
     .setHorizontalAlignment("center")
     .setVerticalAlignment("middle")
     .setFontSize(11);
+  sh.getRange("B1").setHorizontalAlignment("center").setBackground("#ffffff").setFontColor("#2c3e50");
   sh.setRowHeight(1, 32);
+
+  // 2行目のスタイル（ヘッダー）
+  sh.getRange(2, 1, 1, headers.length)
+    .setBackground(STYLE.HEADER_BG)
+    .setFontColor(STYLE.HEADER_FG)
+    .setFontWeight("bold")
+    .setHorizontalAlignment("center")
+    .setVerticalAlignment("middle")
+    .setFontSize(11)
+    .setBorder(true, true, true, true, false, false, STYLE.BORDER, SpreadsheetApp.BorderStyle.SOLID);
+  sh.setRowHeight(2, 30);
+
   return sh;
 }
 

@@ -487,6 +487,95 @@ function demoImportExcel(center) {
 
 
 // ═══════════════════════════════════════════════════════════════
+// 検査中シート連携API（新フロー）
+// ═══════════════════════════════════════════════════════════════
+
+// 検査中シートへ1商品送信（POST no-cors）
+async function gasSaveInspection(center, date, staff, item) {
+  console.log('[inspection] 送信', { center: center, product: item.name });
+  var payload = {
+    action: 'saveInspection',
+    center: center, date: date, staff: staff,
+    item: JSON.stringify(item),
+  };
+  try {
+    await fetch(GAS_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload),
+    });
+    return { ok: true };
+  } catch(e) {
+    console.error('[inspection] POST failed:', e.message);
+    return { ok: false, message: e.message };
+  }
+}
+
+// 検査中シートから当日分を取得（JSONP方式でレスポンス取得）
+function gasGetInspections(center, deliveryDate) {
+  return new Promise(function(resolve) {
+    var cbName = "_getInspCb_" + Date.now();
+    var timeout = setTimeout(function() {
+      delete window[cbName];
+      var el = document.getElementById(cbName); if (el) el.remove();
+      resolve({ items: [] });
+    }, 12000);
+
+    window[cbName] = function(data) {
+      clearTimeout(timeout);
+      delete window[cbName];
+      var el = document.getElementById(cbName); if (el) el.remove();
+      if (data && data.success) resolve({ items: data.data.items || [] });
+      else resolve({ items: [] });
+    };
+
+    var url = GAS_URL + '?action=getInspections'
+      + '&center=' + encodeURIComponent(center)
+      + '&deliveryDate=' + encodeURIComponent(deliveryDate || '')
+      + '&callback=' + cbName;
+
+    var script = document.createElement('script');
+    script.id = cbName;
+    script.src = url;
+    script.onerror = function() {
+      clearTimeout(timeout);
+      delete window[cbName];
+      script.remove();
+      resolve({ items: [] });
+    };
+    document.head.appendChild(script);
+  });
+}
+
+// 検査中シートの1件削除
+async function gasDeleteInspection(center, id) {
+  try {
+    await fetch(GAS_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'deleteInspection', center: center, id: id }),
+    });
+    return { ok: true };
+  } catch(e) { return { ok: false }; }
+}
+
+// 検査中シートを全削除（日付指定）
+async function gasClearInspections(center, deliveryDate) {
+  try {
+    await fetch(GAS_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'clearInspections', center: center, deliveryDate: deliveryDate || '' }),
+    });
+    return { ok: true };
+  } catch(e) { return { ok: false }; }
+}
+
+
+// ═══════════════════════════════════════════════════════════════
 // 不良マスタ読み込み（JSONP方式）
 // ═══════════════════════════════════════════════════════════════
 
