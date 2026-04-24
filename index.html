@@ -695,39 +695,43 @@ textarea.form-input{resize:vertical;min-height:80px}
       </div>
     </div>
 
-    <!-- 検質画像 -->
-    <div class="sec-h">検質画像 <span style="color:var(--red);font-size:8px">2枚必須</span></div>
-    <div class="card">
-      <div style="display:flex;gap:8px;margin-bottom:8px">
-        <div id="inspThumb0" style="flex:1;height:100px;border:1px dashed var(--bdr);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--tx3);overflow:hidden;position:relative">1枚目</div>
-        <div id="inspThumb1" style="flex:1;height:100px;border:1px dashed var(--bdr);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--tx3);overflow:hidden;position:relative">2枚目</div>
-      </div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap">
-        <button type="button" class="btn btn-outline" style="flex:1;font-size:15px;padding:12px" onclick="triggerPhoto('insp','camera')">📷 撮影</button>
-        <button type="button" class="btn btn-outline" style="flex:1;font-size:15px;padding:12px" onclick="triggerPhoto('insp','album')">🖼 アルバム</button>
-      </div>
-      <input type="file" id="inspCameraInput" accept="image/*" capture="environment" style="display:none">
-      <input type="file" id="inspAlbumInput" accept="image/*" style="display:none">
-    </div>
-
-    <!-- 不良入力 -->
-    <div class="sec-h">不良チェック</div>
-    <div class="card">
-      <div class="form-group">
-        <label class="form-label">不良数（不良がなければ空白のまま）</label>
-        <input type="number" class="form-input" id="modalDefectQty" placeholder="0" min="0" oninput="calcDefectRate()">
-      </div>
-      <div id="defectRateRow" style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-        <span style="font-size:10px;color:var(--tx2)">不良率:</span>
-        <span style="font-size:14px;font-weight:700;font-family:'JetBrains Mono',monospace" id="modalDefectRate">--</span>
+    <!-- 検質画像（不良タブでのみ表示） -->
+    <div id="inspPhotosSection">
+      <div class="sec-h">検質画像 <span style="color:var(--red);font-size:8px">2枚必須</span></div>
+      <div class="card">
+        <div style="display:flex;gap:8px;margin-bottom:8px">
+          <div id="inspThumb0" style="flex:1;height:100px;border:1px dashed var(--bdr);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--tx3);overflow:hidden;position:relative">1枚目</div>
+          <div id="inspThumb1" style="flex:1;height:100px;border:1px dashed var(--bdr);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--tx3);overflow:hidden;position:relative">2枚目</div>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button type="button" class="btn btn-outline" style="flex:1;font-size:15px;padding:12px" onclick="triggerPhoto('insp','camera')">📷 撮影</button>
+          <button type="button" class="btn btn-outline" style="flex:1;font-size:15px;padding:12px" onclick="triggerPhoto('insp','album')">🖼 アルバム</button>
+        </div>
+        <input type="file" id="inspCameraInput" accept="image/*" capture="environment" style="display:none">
+        <input type="file" id="inspAlbumInput" accept="image/*" style="display:none">
       </div>
     </div>
 
-    <!-- 不良詳細（不良数>0で表示） -->
+    <!-- 不良入力（不良タブでのみ表示） -->
+    <div id="defectCheckSection">
+      <div class="sec-h">不良チェック</div>
+      <div class="card">
+        <div class="form-group">
+          <label class="form-label">不良数（不良がなければ空白のまま）</label>
+          <input type="number" class="form-input" id="modalDefectQty" placeholder="0" min="0" oninput="calcDefectRate()">
+        </div>
+        <div id="defectRateRow" style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <span style="font-size:10px;color:var(--tx2)">不良率:</span>
+          <span style="font-size:14px;font-weight:700;font-family:'JetBrains Mono',monospace" id="modalDefectRate">--</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 不良理由・不良画像（不良数>0で表示） -->
     <div id="defectFields" class="hidden">
       <div class="sec-h">不良詳細 <span style="color:var(--red);font-size:8px">不良理由は必須</span></div>
       <div class="card">
-        <div class="form-group">
+        <div class="form-group" style="margin-bottom:0">
           <label class="form-label">不良理由</label>
           <div style="display:flex;gap:6px;align-items:center">
             <select class="form-select" id="defectReason" style="flex:1" onchange="onDefectReasonChange()">
@@ -735,10 +739,6 @@ textarea.form-input{resize:vertical;min-height:80px}
             </select>
             <input type="text" class="form-input hidden" id="defectReasonText" placeholder="理由を入力" style="flex:1">
           </div>
-        </div>
-        <div class="form-group" style="margin-bottom:0">
-          <label class="form-label">コメント（任意）</label>
-          <textarea class="form-input" id="modalComment" placeholder="コメントがあれば入力..."></textarea>
         </div>
       </div>
 
@@ -755,6 +755,16 @@ textarea.form-input{resize:vertical;min-height:80px}
         </div>
         <input type="file" id="defectCameraInput" accept="image/*" capture="environment" style="display:none">
         <input type="file" id="defectAlbumInput" accept="image/*" style="display:none">
+      </div>
+    </div>
+
+    <!-- コメント（検査タブのみ任意入力） -->
+    <div id="commentSection">
+      <div class="sec-h">コメント（任意）</div>
+      <div class="card">
+        <div class="form-group" style="margin-bottom:0">
+          <textarea class="form-input" id="modalComment" placeholder="コメントがあれば入力..."></textarea>
+        </div>
       </div>
     </div>
 
@@ -1289,6 +1299,13 @@ function openInspection(idx, fromDefect) {
   // fromDefect=trueなら不良モード、そうでなければ検査モード
   if (fromDefect) state.currentMode = 'defect';
   else state.currentMode = 'inspect';
+
+  // 検査モード/不良モードで表示セクション切替
+  var isDefectMode = (state.currentMode === 'defect');
+  document.getElementById('inspPhotosSection').classList.toggle('hidden', !isDefectMode);
+  document.getElementById('defectCheckSection').classList.toggle('hidden', !isDefectMode);
+  // コメントは検査モードのみ
+  document.getElementById('commentSection').classList.toggle('hidden', isDefectMode);
   var list = (state.currentMode === 'defect') ? state.defectItems : state.items;
   var it = list[idx];
   document.getElementById('modalTitle').textContent = (idx+1) + '. ' + it.name;
@@ -1392,6 +1409,8 @@ function saveInspection() {
     it.defectRate = inspQty > 0 ? Math.round(defectQty / inspQty * 1000) / 10 : 0;
     it.defectReason = defectQty > 0 ? document.getElementById('defectReason').value : '';
     it.defectReasonText = defectQty > 0 ? document.getElementById('defectReasonText').value : '';
+  } else {
+    // 検査モードでコメント保存
     it.comment = document.getElementById('modalComment').value;
   }
 
@@ -1709,6 +1728,7 @@ async function sendInspection(idx) {
     code: it.code, unit: it.unit,
     arrivalQty: Number(it.arrivalQty) || 0,
     inspQty: Number(it.inspQty) || 0,
+    comment: it.comment || '',
     sentAt: new Date().toLocaleString('ja-JP')
   };
   if (!state.history) state.history = [];
@@ -1770,6 +1790,11 @@ function editHistory(idx) {
   state.editingHistoryIdx = idx;
   state.currentItem = -1;
 
+  // 検査モードなので画像・不良セクションを非表示
+  document.getElementById('inspPhotosSection').classList.add('hidden');
+  document.getElementById('defectCheckSection').classList.add('hidden');
+  document.getElementById('defectFields').classList.add('hidden');
+
   // 一時itemとして扱う
   var it = {
     id: h.id, name: h.name, origin: h.origin, supplier: h.supplier,
@@ -1785,6 +1810,7 @@ function editHistory(idx) {
   document.getElementById('modalArrival').value = it.arrivalQty || '';
   document.getElementById('modalInspQty').value = it.inspQty || '';
   document.getElementById('modalUnit').value = it.unit || '';
+  document.getElementById('modalComment').value = h.comment || '';
   document.getElementById('modalDefectQty').value = '';
   calcDefectRate();
   document.getElementById('defectFields').classList.add('hidden');
@@ -1815,6 +1841,7 @@ async function saveHistoryEdit() {
   h.arrivalQty = arrival;
   h.inspQty = inspQty;
   h.unit = unit;
+  h.comment = document.getElementById('modalComment').value;
   h.sentAt = new Date().toLocaleString('ja-JP') + ' (修正)';
 
   // GASへ上書き送信（ID付きで）
