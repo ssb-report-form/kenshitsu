@@ -712,6 +712,16 @@ textarea.form-input{resize:vertical;min-height:80px}
       </div>
     </div>
 
+    <!-- コメント（検質画像の下） -->
+    <div id="commentSection">
+      <div class="sec-h">コメント（任意）</div>
+      <div class="card">
+        <div class="form-group" style="margin-bottom:0">
+          <textarea class="form-input" id="modalComment" placeholder="コメントがあれば入力..."></textarea>
+        </div>
+      </div>
+    </div>
+
     <!-- 不良入力（不良タブでのみ表示） -->
     <div id="defectCheckSection">
       <div class="sec-h">不良チェック</div>
@@ -758,15 +768,6 @@ textarea.form-input{resize:vertical;min-height:80px}
       </div>
     </div>
 
-    <!-- コメント（検査タブのみ任意入力） -->
-    <div id="commentSection">
-      <div class="sec-h">コメント（任意）</div>
-      <div class="card">
-        <div class="form-group" style="margin-bottom:0">
-          <textarea class="form-input" id="modalComment" placeholder="コメントがあれば入力..."></textarea>
-        </div>
-      </div>
-    </div>
 
     <div class="btn-row" style="margin-top:16px">
       <button class="btn btn-outline" onclick="closeModal()">キャンセル</button>
@@ -1304,8 +1305,7 @@ function openInspection(idx, fromDefect) {
   var isDefectMode = (state.currentMode === 'defect');
   document.getElementById('inspPhotosSection').classList.toggle('hidden', !isDefectMode);
   document.getElementById('defectCheckSection').classList.toggle('hidden', !isDefectMode);
-  // コメントは検査モードのみ
-  document.getElementById('commentSection').classList.toggle('hidden', isDefectMode);
+  // コメントは両モードで表示
   var list = (state.currentMode === 'defect') ? state.defectItems : state.items;
   var it = list[idx];
   document.getElementById('modalTitle').textContent = (idx+1) + '. ' + it.name;
@@ -1404,14 +1404,12 @@ function saveInspection() {
   it.arrivalQty = arrival;
   it.inspQty = inspQty;
   it.unit = document.getElementById('modalUnit').value;
+  it.comment = document.getElementById('modalComment').value;  // コメントは両モード共通
   if (isDefectMode) {
     it.defectQty = defectQty;
     it.defectRate = inspQty > 0 ? Math.round(defectQty / inspQty * 1000) / 10 : 0;
     it.defectReason = defectQty > 0 ? document.getElementById('defectReason').value : '';
     it.defectReasonText = defectQty > 0 ? document.getElementById('defectReasonText').value : '';
-  } else {
-    // 検査モードでコメント保存
-    it.comment = document.getElementById('modalComment').value;
   }
 
   closeModal();
