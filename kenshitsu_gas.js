@@ -577,15 +577,18 @@ function handleSaveReport(data) {
 // 5a. 検査中シートへの保存（検査タブから1商品ずつ送信）
 // ═══════════════════════════════════════════════════════════════
 
+// 検査中データシート: ユーザー指定列構成
+// A: 店着日 B: 取引先名 C: 商品コード D: 商品名 E: 産地 F: 入荷数 G: 検質数(10%) H: 発注単位 I: ID(非表示)
+var INSPECTION_SHEET_NAME = "検査中";
+var INSPECTION_HEADERS = ["店着日", "取引先名", "商品コード", "商品名", "産地", "入荷数", "検質数(10%)", "発注単位", "ID"];
+
 function handleSaveInspection(data) {
   var center = data.center;
-  var date = data.date;  // 検査日
-  var staff = data.staff || "";
+  var date = data.date;
   var item = data.item;
   if (typeof item === "string") item = JSON.parse(item);
   if (!item) return error("商品データが空です");
 
-  // 店着日 = 検査日+1
   var inspDate = new Date(date);
   var deliveryDate = new Date(inspDate);
   deliveryDate.setDate(deliveryDate.getDate() + 1);
@@ -595,26 +598,36 @@ function handleSaveInspection(data) {
   if (!ssId) return error("センター「" + center + "」のスプレッドシートIDが未設定です");
   var ss = SpreadsheetApp.openById(ssId);
 
-  // 検査中シートを取得 or 作成
-  var sh = getOrCreateSheet(ss, "検査中", [
-    "ID", "タイムスタンプ", "店着日", "担当者", "商品コード", "商品名",
-    "産地", "取引先", "発注単位", "入荷数", "検質数", "状態"
-  ]);
+  var sh = getOrCreateSheet(ss, INSPECTION_SHEET_NAME, INSPECTION_HEADERS);
 
-  var timestamp = new Date().toLocaleString("ja-JP");
-  var id = String(new Date().getTime()) + "_" + Math.floor(Math.random() * 10000);
-  sh.appendRow([
-    id, timestamp, deliveryStr, staff,
-    item.code || "", item.name || "", item.origin || "",
-    item.supplier || "", item.unit || "",
-    Number(item.arrivalQty) || 0, Number(item.inspQty) || 0, "検査中"
-  ]);
+  // 既存ID指定なら上書き、なければ新規追加
+  var id = item.id || (String(new Date().getTime()) + "_" + Math.floor(Math.random() * 10000));
+  var rowData = [
+    deliveryDate, item.supplier || "", item.code || "", item.name || "", item.origin || "",
+    Number(item.arrivalQty) || 0, Number(item.inspQty) || 0, item.unit || "", id
+  ];
 
+  if (item.id) {
+    // 上書き更新: IDで行を特定
+    var rows = sh.getDataRange().getValues();
+    for (var r = 1; r < rows.length; r++) {
+      if (String(rows[r][8]) === String(id)) {
+        sh.getRange(r + 1, 1, 1, rowData.length).setValues([rowData]);
+        sh.getRange(r + 1, 1).setNumberFormat("yyyy-mm-dd");
+        return ok({ saved: true, id: id, deliveryDate: deliveryStr, updated: true });
+      }
+    }
+  }
+
+  // 新規追加
+  sh.appendRow(rowData);
   var lastRow = sh.getLastRow();
-  sh.getRange(lastRow, 3).setNumberFormat("yyyy-mm-dd");
-  var rng = sh.getRange(lastRow, 1, 1, 12);
+  sh.getRange(lastRow, 1).setNumberFormat("yyyy-mm-dd");
+  var rng = sh.getRange(lastRow, 1, 1, INSPECTION_HEADERS.length);
   rng.setBorder(true, true, true, true, true, true, STYLE.BORDER, SpreadsheetApp.BorderStyle.SOLID);
   if (lastRow % 2 === 0) rng.setBackground(STYLE.STRIPE);
+  // I列（ID）を非表示
+  try { sh.hideColumns(9); } catch(e) {}
 
   return ok({ saved: true, id: id, deliveryDate: deliveryStr });
 }
@@ -626,7 +639,7 @@ function handleSaveInspection(data) {
 
 function handleGetInspections(data) {
   var center = data.center;
-  var deliveryDate = data.deliveryDate || "";  // YYYY-MM-DD
+  var deliveryDate = data.deliveryDate || "";
 
   var ssId = CONFIG.REPORT_SPREADSHEETS[center];
   if (!ssId) return error("センター未設定");
@@ -635,36 +648,31 @@ function handleGetInspections(data) {
   var sh = null;
   var all = ss.getSheets();
   for (var i = 0; i < all.length; i++) {
-    if (all[i].getName() === "検査中") { sh = all[i]; break; }
+    if (all[i].getName() === INSPECTION_SHEET_NAME) { sh = all[i]; break; }
   }
   if (!sh) return ok({ items: [] });
 
+  // 列: A=店着日 B=取引先名 C=商品コード D=商品名 E=産地 F=入荷数 G=検質数 H=発注単位 I=ID
   var rows = sh.getDataRange().getValues();
   var items = [];
   for (var r = 1; r < rows.length; r++) {
     var row = rows[r];
-    var dd = row[2];
+    var dd = row[0];
     if (dd instanceof Date) {
       dd = Utilities.formatDate(dd, "Asia/Tokyo", "yyyy-MM-dd");
     }
-    // 当日指定ありなら、店着日一致のみ
     if (deliveryDate && dd !== deliveryDate) continue;
-    // 不良入力済みは除外
-    if (row[11] === "不良入力済") continue;
 
     items.push({
-      id: row[0],
-      timestamp: row[1],
+      id: row[8],
       deliveryDate: dd,
-      staff: row[3],
-      code: row[4],
-      name: row[5],
-      origin: row[6],
-      supplier: row[7],
-      unit: row[8],
-      arrivalQty: Number(row[9]) || 0,
-      inspQty: Number(row[10]) || 0,
-      status: row[11]
+      supplier: row[1],
+      code: row[2],
+      name: row[3],
+      origin: row[4],
+      arrivalQty: Number(row[5]) || 0,
+      inspQty: Number(row[6]) || 0,
+      unit: row[7]
     });
   }
   return ok({ items: items, center: center });
@@ -682,12 +690,13 @@ function handleDeleteInspection(data) {
   var ssId = CONFIG.REPORT_SPREADSHEETS[center];
   if (!ssId) return error("センター未設定");
   var ss = SpreadsheetApp.openById(ssId);
-  var sh = ss.getSheetByName("検査中");
+  var sh = ss.getSheetByName(INSPECTION_SHEET_NAME);
   if (!sh) return ok({ deleted: 0 });
 
   var rows = sh.getDataRange().getValues();
+  // I列(idx=8)のID列で検索
   for (var r = rows.length - 1; r >= 1; r--) {
-    if (String(rows[r][0]) === String(id)) {
+    if (String(rows[r][8]) === String(id)) {
       sh.deleteRow(r + 1);
       return ok({ deleted: 1 });
     }
@@ -707,13 +716,14 @@ function handleClearInspections(data) {
   var ssId = CONFIG.REPORT_SPREADSHEETS[center];
   if (!ssId) return error("センター未設定");
   var ss = SpreadsheetApp.openById(ssId);
-  var sh = ss.getSheetByName("検査中");
+  var sh = ss.getSheetByName(INSPECTION_SHEET_NAME);
   if (!sh) return ok({ deleted: 0 });
 
   var rows = sh.getDataRange().getValues();
   var deleted = 0;
+  // A列(idx=0)が店着日
   for (var r = rows.length - 1; r >= 1; r--) {
-    var dd = rows[r][2];
+    var dd = rows[r][0];
     if (dd instanceof Date) dd = Utilities.formatDate(dd, "Asia/Tokyo", "yyyy-MM-dd");
     if (!deliveryDate || dd === deliveryDate) {
       sh.deleteRow(r + 1);

@@ -403,8 +403,10 @@ textarea.form-input{resize:vertical;min-height:80px}
     <button class="btn btn-gold" onclick="goStepInfo()">次へ →</button>
   </div>
 
-  <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--bdr)">
-    <button class="btn btn-outline" onclick="clearTodayData()" style="font-size:12px;padding:8px 12px;opacity:.8">🗑 当日の履歴・検査中データを削除</button>
+  <div style="margin-top:20px;padding:14px;background:rgba(224,85,101,.08);border:1px solid rgba(224,85,101,.3);border-radius:10px">
+    <div style="font-size:12px;color:var(--red);font-weight:600;margin-bottom:8px">⚠️ 当日データの削除</div>
+    <div style="font-size:11px;color:var(--tx2);margin-bottom:10px">履歴・検査中シートの当日分を全てクリアします</div>
+    <button class="btn btn-red" onclick="clearTodayData()" style="font-size:13px;font-weight:700;background:var(--red);color:#fff">🗑 当日の履歴・検査中データを削除</button>
   </div>
 </div>
 
@@ -1130,6 +1132,18 @@ function applyImportData(result) {
   // 途中保存データがあれば復元
   restoreProgress();
 
+  // 送信済み（履歴にある）商品はitem一覧から除外
+  if (state.history && state.history.length) {
+    var sentKeys = {};
+    state.history.forEach(function(h) {
+      sentKeys[(h.code||'')+'|'+(h.name||'')+'|'+(h.supplier||'')] = true;
+    });
+    state.items = state.items.filter(function(it) {
+      var k = (it.code||'')+'|'+(it.name||'')+'|'+(it.supplier||'');
+      return !sentKeys[k];
+    });
+  }
+
   var suppliers = [];
   state.items.forEach(function(it) {
     if (suppliers.indexOf(it.supplier) < 0) suppliers.push(it.supplier);
@@ -1235,6 +1249,9 @@ function deleteItem(idx) {
 
 function openInspection(idx, fromDefect) {
   state.currentItem = idx;
+  state.editingHistoryIdx = null;
+  // 通常モーダルなので保存ボタンをsaveInspectionに戻す
+  document.getElementById('modalSave').onclick = saveInspection;
   // fromDefect=trueなら不良モード、そうでなければ検査モード
   if (fromDefect) state.currentMode = 'defect';
   else state.currentMode = 'inspect';
@@ -1644,13 +1661,16 @@ async function sendInspection(idx) {
   var date = document.getElementById('inspDate').value;
   var staff = document.getElementById('staffSelect').value;
 
-  // 検査中シートへ送信
+  // IDを生成してGASへ渡す（送信後に履歴から識別するため）
+  var newId = String(Date.now()) + '_' + Math.floor(Math.random() * 10000);
+  var itemWithId = Object.assign({}, it, { id: newId });
+
   if (typeof gasSaveInspection === 'function') {
-    await gasSaveInspection(state.center, date, staff, it);
+    await gasSaveInspection(state.center, date, staff, itemWithId);
   }
 
-  // 履歴に追加、stateから削除
   var entry = {
+    id: newId,
     name: it.name, origin: it.origin, supplier: it.supplier,
     code: it.code, unit: it.unit,
     arrivalQty: Number(it.arrivalQty) || 0,
@@ -1699,12 +1719,85 @@ function renderHistory() {
       + '<div style="font-size:10px;color:var(--tx3);margin-top:2px">送信: '+h.sentAt+'</div>'
       + '</div>'
       + '<div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">'
+      + '<button onclick="editHistory('+i+')" style="background:var(--abg);color:var(--amb);border:none;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer">✎ 修正</button>'
       + '<button onclick="cloneFromHistory('+i+')" style="background:var(--bbg);color:var(--blu);border:none;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer">📋 複製</button>'
       + '<button onclick="deleteHistory('+i+')" style="background:var(--rbg);color:var(--red);border:none;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer">✕ 削除</button>'
       + '</div>'
       + '</div>'
       + '</div>';
   }).join('');
+}
+
+// 履歴から編集 - モーダル表示
+function editHistory(idx) {
+  var h = state.history[idx];
+  // 検査モーダルを開いて既存値をセット、保存時は履歴を更新
+  state.currentMode = 'inspect';
+  state.editingHistoryIdx = idx;
+  state.currentItem = -1;
+
+  // 一時itemとして扱う
+  var it = {
+    id: h.id, name: h.name, origin: h.origin, supplier: h.supplier,
+    code: h.code, unit: h.unit,
+    arrivalQty: h.arrivalQty, inspQty: h.inspQty,
+    originRef: h.origin,
+  };
+
+  document.getElementById('modalTitle').textContent = '修正: ' + h.name;
+  document.getElementById('modalSub').textContent = h.supplier || '';
+  document.getElementById('modalOrigin').value = it.origin || '';
+  document.getElementById('originHint').textContent = '参考産地: ' + (it.originRef || '--');
+  document.getElementById('modalArrival').value = it.arrivalQty || '';
+  document.getElementById('modalInspQty').value = it.inspQty || '';
+  document.getElementById('modalUnit').value = it.unit || '';
+  document.getElementById('modalDefectQty').value = '';
+  calcDefectRate();
+  document.getElementById('defectFields').classList.add('hidden');
+
+  // 保存ボタンの動作を「履歴更新」に変更
+  document.getElementById('modalSave').onclick = saveHistoryEdit;
+
+  document.getElementById('inspModal').classList.add('on');
+}
+
+async function saveHistoryEdit() {
+  var idx = state.editingHistoryIdx;
+  if (idx === undefined || idx === null) { saveInspection(); return; }
+  var h = state.history[idx];
+
+  var origin = document.getElementById('modalOrigin').value.trim();
+  var arrival = Number(document.getElementById('modalArrival').value) || 0;
+  var inspQty = Number(document.getElementById('modalInspQty').value) || 0;
+  var unit = document.getElementById('modalUnit').value;
+
+  if (!origin) { toast('産地を入力してください','error'); return; }
+  if (!arrival) { toast('入荷数を入力してください','error'); return; }
+
+  if (!confirm('この内容でスプレッドシートの古いデータを上書きします。よろしいですか？')) return;
+
+  showLoading('更新中...');
+  h.origin = origin;
+  h.arrivalQty = arrival;
+  h.inspQty = inspQty;
+  h.unit = unit;
+  h.sentAt = new Date().toLocaleString('ja-JP') + ' (修正)';
+
+  // GASへ上書き送信（ID付きで）
+  var date = document.getElementById('inspDate').value;
+  var staff = document.getElementById('staffSelect').value;
+  if (typeof gasSaveInspection === 'function') {
+    await gasSaveInspection(state.center, date, staff, h);
+  }
+
+  state.editingHistoryIdx = null;
+  // 保存ボタンを元に戻す
+  document.getElementById('modalSave').onclick = saveInspection;
+  closeModal();
+  autoSaveProgress();
+  renderHistory();
+  hideLoading();
+  toast('✓ 修正しました（スプレッドシートも更新）','success');
 }
 
 function cloneFromHistory(idx) {
@@ -1721,12 +1814,22 @@ function cloneFromHistory(idx) {
   toast('📋 ' + h.name + ' を複製しました','success');
 }
 
-function deleteHistory(idx) {
-  if (!confirm('履歴から削除しますか？')) return;
+async function deleteHistory(idx) {
+  var h = state.history[idx];
+  if (!confirm('「' + h.name + '」を削除します。\n\n※スプレッドシートの検査中データも削除されます。\n本当に削除しますか？')) return;
+
+  showLoading('削除中...');
+  // スプレッドシートから削除
+  if (h.id && typeof gasDeleteInspection === 'function') {
+    await gasDeleteInspection(state.center, h.id);
+  }
+
   state.history.splice(idx, 1);
   autoSaveProgress();
+  hideLoading();
   renderHistory();
   renderItems();
+  toast('削除しました','success');
 }
 
 // ══════════════════════════════════════
