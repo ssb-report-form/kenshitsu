@@ -512,6 +512,10 @@ textarea.form-input{resize:vertical;min-height:80px}
   </div>
 
   <div class="sec-h">品目一覧（タップして検査）</div>
+  <div style="display:flex;gap:8px;margin-bottom:8px">
+    <button onclick="bulkSendItems()" style="flex:1;font-size:12px;padding:8px 12px;background:var(--gbg);color:var(--grn);border:1px solid rgba(46,201,138,.4);border-radius:8px;font-weight:700;cursor:pointer">📤 入力済みを一括送信</button>
+    <button onclick="bulkDeleteItems()" style="flex:1;font-size:12px;padding:8px 12px;background:var(--rbg);color:var(--red);border:1px solid rgba(224,85,101,.4);border-radius:8px;font-weight:700;cursor:pointer">🗑 一括削除</button>
+  </div>
   <div class="card" id="itemList" style="padding:10px">
     <!-- dynamically populated -->
   </div>
@@ -1737,6 +1741,71 @@ async function sendInspection(idx) {
   hideLoading();
   renderItems();
   toast('📤 ' + it.name + ' を送信しました','success');
+}
+
+// 一括送信（入荷数・産地が入力済みの品目のみ）
+async function bulkSendItems() {
+  var ready = [];
+  state.items.forEach(function(it, i) {
+    if (it.origin && it.origin.trim() && Number(it.arrivalQty) > 0) {
+      ready.push(i);
+    }
+  });
+
+  if (!ready.length) {
+    toast('入力完了済みの品目がありません','error');
+    return;
+  }
+
+  if (!confirm(ready.length + '件の入力済み品目を一括送信します。\nよろしいですか？')) return;
+
+  showLoading('一括送信中... (0/' + ready.length + ')');
+  var date = document.getElementById('inspDate').value;
+  var staff = document.getElementById('staffSelect').value;
+  if (!state.history) state.history = [];
+
+  // 後ろから処理（splice対応）
+  for (var k = ready.length - 1; k >= 0; k--) {
+    var idx = ready[k];
+    var it = state.items[idx];
+    var newId = String(Date.now()) + '_' + Math.floor(Math.random() * 10000);
+    var itemWithId = Object.assign({}, it, { id: newId });
+
+    if (typeof gasSaveInspection === 'function') {
+      await gasSaveInspection(state.center, date, staff, itemWithId);
+    }
+
+    state.history.push({
+      id: newId,
+      name: it.name, origin: it.origin, supplier: it.supplier,
+      code: it.code, unit: it.unit,
+      arrivalQty: Number(it.arrivalQty) || 0,
+      inspQty: Number(it.inspQty) || 0,
+      comment: it.comment || '',
+      sentAt: new Date().toLocaleString('ja-JP')
+    });
+    state.items.splice(idx, 1);
+    showLoading('一括送信中... (' + (ready.length - k) + '/' + ready.length + ')');
+  }
+
+  autoSaveProgress();
+  hideLoading();
+  renderItems();
+  toast('✓ ' + ready.length + '件を一括送信しました','success');
+}
+
+// 一括削除（品目一覧の全品目）
+function bulkDeleteItems() {
+  if (!state.items.length) {
+    toast('削除する品目がありません','error');
+    return;
+  }
+  if (!confirm('品目一覧の全 ' + state.items.length + ' 件を削除します。\n\n※送信履歴は削除されません。\n本当に削除しますか？')) return;
+
+  state.items = [];
+  autoSaveProgress();
+  renderItems();
+  toast('✓ 品目一覧をクリアしました','success');
 }
 
 // 履歴の表示/非表示
