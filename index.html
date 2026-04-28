@@ -1901,12 +1901,29 @@ async function loadInspectionsFromSheet() {
 
   showLoading('検査中シートから読込中...');
   var result = await gasGetInspections(state.center, delivery);
-  hideLoading();
 
+  // 該当店着日のデータがなければ全件取得して日付選択を促す
   if (!result.items || !result.items.length) {
-    document.getElementById('loadInspStatus').textContent = '該当データなし';
-    toast('検査中シートにデータがありません','error');
-    return;
+    result = await gasGetInspections(state.center, '');
+    hideLoading();
+    if (!result.items || !result.items.length) {
+      document.getElementById('loadInspStatus').textContent = '該当データなし';
+      toast('検査中シートにデータがありません','error');
+      return;
+    }
+    // 利用可能な店着日リスト
+    var dates = [];
+    result.items.forEach(function(it) { if (dates.indexOf(it.deliveryDate) < 0) dates.push(it.deliveryDate); });
+    dates.sort();
+    var pick = prompt('店着日 ' + delivery + ' のデータがありません。\n利用可能な店着日:\n' + dates.join('\n') + '\n\n読み込む店着日を入力してください:', dates[dates.length - 1]);
+    if (!pick) return;
+    result.items = result.items.filter(function(it) { return it.deliveryDate === pick; });
+    if (!result.items.length) {
+      toast('指定日のデータがありません','error');
+      return;
+    }
+  } else {
+    hideLoading();
   }
 
   // defectItemsを構築（既存のdefectItemsがあれば画像・不良情報を保持）
